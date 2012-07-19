@@ -21,7 +21,6 @@ CANVAS_SRC = \
 
 JSG_SRC = \
          jsg/label.cpp \
-         jsg/matrix.cpp \
          jsg/log.cpp \
          jsg/jsg.cpp \
          jsg/media_player.cpp \
