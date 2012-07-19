@@ -1,0 +1,5 @@
+To convert .string file to .json file:
+1. Convert Localizable.strings files from encoding UTF-16 to UTF-8
+2. Replace " = " with ": "
+3. Replace "; with ",
+4. Replace %@ with %s

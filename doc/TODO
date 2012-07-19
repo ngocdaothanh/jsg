@@ -1,0 +1,3 @@
+* Remove jsg.load, instead use AMD or CJS library loading mechanism:
+  http://requirejs.org/docs/whyamd.html
+* Support iOS and normal browser
