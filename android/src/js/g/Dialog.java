@@ -1,11 +1,7 @@
 package js.g;
 
-import java.util.Map;
-
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Dialog {
     public static String alert(final String message) {
@@ -24,34 +20,26 @@ public class Dialog {
         return null;
     }
 
-    private static ObjectMapper mapper = new ObjectMapper();
-
-    public static String confirm(final String json) {
+    public static String confirm(final String callbackId_message) {
         JSG.runOnUiThread(new Runnable() {
-            @SuppressWarnings("unchecked")
             public void run() {
-                Map<String, Object> map = null;
-                try {
-                    map = mapper.readValue(json, Map.class);
-                } catch (Exception e) {
-
-                }
-                String message = (String) map.get("message");
-                final int callbackId = (Integer) map.get("callbackId");
+                int commaPos = callbackId_message.indexOf(',');
+                final String callbackId = callbackId_message.substring(0, commaPos);
+                final String message    = callbackId_message.substring(commaPos);
 
                 new AlertDialog.Builder(JSGActivity.getInstance())
                 .setMessage(message)
                 .setPositiveButton("OK",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dlg, int which) {
-                            JSG.postJS(String.format("jsg.callback.invoke(%d, true)", callbackId));
+                            JSG.postJS(String.format("jsg.callback.invoke(%s, true)", callbackId));
                         }
                     }
                 )
                 .setNegativeButton("Cancel",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dlg, int which) {
-                            JSG.postJS(String.format("jsg.callback.invoke(%d, false)", callbackId));
+                            JSG.postJS(String.format("jsg.callback.invoke(%s, false)", callbackId));
                         }
                     }
                 )

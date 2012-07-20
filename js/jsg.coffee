@@ -67,7 +67,7 @@ class JSG
   # callback: (boolean) ->
   confirm: (message, callback) ->
     callbackId = @callback.register(callback)
-    @android.callJava('js.g.Dialog', 'confirm', {message: message, callbackId: callbackId})
+    @android.callJava('js.g.Dialog', 'confirm', callbackId + ',' + message)
 
   # args: canvas, title, description
   saveCanvasToSystemGallery: jsgSaveCanvasToSystemGallery
@@ -164,6 +164,9 @@ window = window || {}
 jsg.load("scripts/jsg/lib/underscore-1.3.3.min.js")
 jsg.load("scripts/jsg/lib/tweenjs-r6.min.js")
 
+jsg.load('scripts/jsg/id_generator.js')
+jsg.load('scripts/jsg/callback.js')
+
 jsg.load('scripts/jsg/tick.js')
 jsg.load('scripts/jsg/timer.js')
 
@@ -172,17 +175,3 @@ jsg.load('scripts/jsg/image_cache.js')
 
 jsg.load('scripts/jsg/touch.js')
 jsg.load('scripts/jsg/node_touch.js')
-
-jsg.load('scripts/jsg/node.js')
-jsg.load('scripts/jsg/image_view.js')
-jsg.load('scripts/jsg/sprite.js')
-
-jsg.load('scripts/jsg/image_button.js')
-jsg.load('scripts/jsg/label.js')
-jsg.load('scripts/jsg/button.js')
-jsg.load('scripts/jsg/scroll_view.js')
-
-jsg.load('scripts/jsg/scene.js')
-jsg.load('scripts/jsg/stage.js')
-
-jsg.load('scripts/jsg/anim.js')
