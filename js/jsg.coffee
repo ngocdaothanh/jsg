@@ -37,6 +37,12 @@ class JSG
 
   #-----------------------------------------------------------------------------
 
+  onFrame: (touchActions, touchXs, touchYs) ->
+    @touch.onFrame(touchActions, touchXs, touchYs)
+    @fireTick()
+
+  #-----------------------------------------------------------------------------
+
   # Plugins will be attached here
   plugin: {}
 

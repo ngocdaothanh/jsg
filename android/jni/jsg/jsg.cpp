@@ -20,9 +20,9 @@ static HandleScope            scope;
 static Handle<ObjectTemplate> global;
 static Persistent<Context>    context;
 
-static Persistent<Object>   stageObject;
-static Persistent<Object>   canvasObject;
-static Persistent<Function> onFrameFun;
+static Persistent<Object>   jsgObject;
+static Persistent<Object>   jsgCanvasObject;
+static Persistent<Function> jsgOnFrameFun;
 
 //------------------------------------------------------------------------------
 
@@ -115,9 +115,9 @@ static void jsCacheStage()
 
   Handle<Object> jsgObject = Handle<Object>::Cast(context->Global()->Get(String::New("jsg")));
 
-  stageObject  = Persistent<Object>::New(Handle<Object>::Cast(jsgObject->Get(String::New("stage"))));
-  canvasObject = Persistent<Object>::New(Handle<Object>::Cast(stageObject->Get(String::New("canvas"))));
-  onFrameFun   = Persistent<Function>::New(Handle<Function>::Cast(stageObject->Get(String::New("onFrame"))));
+  jsgObject       = Persistent<Object>::New(Handle<Object>::Cast(context->Global()->Get(String::New("jsg"))));
+  jsgCanvasObject = Persistent<Object>::New(Handle<Object>::Cast(jsgObject->Get(String::New("canvas"))));
+  jsgOnFrameFun   = Persistent<Function>::New(Handle<Function>::Cast(jsgObject->Get(String::New("onFrame"))));
 }
 
 static void jsDestroy()
