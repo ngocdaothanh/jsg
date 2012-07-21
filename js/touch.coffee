@@ -46,15 +46,18 @@ class Touch
   #-----------------------------------------------------------------------------
 
   unlisten: (listener) ->
-    @downListeners = _.without(@downListeners, listener)
-    @upListeners   = _.without(@upListeners,   listener)
-    @moveListeners = _.without(@moveListeners, listener)
-    @tapListeners  = _.without(@tapListeners,  listener)
+    idx = @downListeners.indexOf(listener)
+    @downListeners.splice(idx, 1) if idx != -1
+
+    idx = @upListeners.indexOf(listener)
+    @upListeners.splice(idx, 1) if idx != -1
+
+    idx = @moveListeners.indexOf(listener)
+    @moveListeners.splice(idx, 1) if idx != -1
+
+    idx = @tapListeners.indexOf(listener)
+    @tapListeners.splice(idx, 1) if idx != -1
 
 #-------------------------------------------------------------------------------
 
-# Normally games should not use jsg.touch directly.
-# Use Node#touch instead because it's easier and more effective.
-# Events are not fired for a Node if its width/height is 0, it or its parent is
-# invisible or inactive.
 jsg.touch = new Touch

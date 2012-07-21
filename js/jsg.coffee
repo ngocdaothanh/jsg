@@ -1,4 +1,21 @@
 class JSG
+  createCanvasAndContext: (width, height) ->
+    canvas  = new Canvas(width, height)
+    context = new Context2d(canvas)
+
+    # See Canvas.prototype.getContext in canvas.js
+    canvas._context2d = context
+    context.canvas    = canvas
+
+    # https://github.com/LearnBoost/node-canvas
+    # Antialias settings other than 'none' give slow/inaccurate result on Android
+    context.antialias      = 'none'
+    context.patternQuality = 'fast'
+
+    [canvas, context]
+
+  #-----------------------------------------------------------------------------
+
   loadString: jsgLoadString
 
   loadJSON: (src) ->
@@ -13,7 +30,7 @@ class JSG
     @readyListeners.push(listener)
 
   fireReady: (width, height) ->
-    @stage = new Stage(width, height)
+    [@canvas, @context] = @createCanvasAndContext(width, height)
     if @readyListeners?
       for listener in @readyListeners
         listener(width, height)
@@ -161,9 +178,6 @@ window = window || {}
 
 #-------------------------------------------------------------------------------
 
-jsg.load("scripts/jsg/lib/underscore-1.3.3.min.js")
-jsg.load("scripts/jsg/lib/tweenjs-r6.min.js")
-
 jsg.load('scripts/jsg/id_generator.js')
 jsg.load('scripts/jsg/callback.js')
 
@@ -174,4 +188,3 @@ jsg.load('scripts/jsg/sound_pool.js')
 jsg.load('scripts/jsg/image_cache.js')
 
 jsg.load('scripts/jsg/touch.js')
-jsg.load('scripts/jsg/node_touch.js')
