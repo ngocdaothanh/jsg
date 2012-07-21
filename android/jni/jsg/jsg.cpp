@@ -402,7 +402,7 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
 
   // Clear stage
 
-  Canvas* canvas = ObjectWrap::Unwrap<Canvas>(canvasObject);
+  Canvas* canvas = ObjectWrap::Unwrap<Canvas>(jsgCanvasObject);
   int     width  = canvas->width;
   int     height = canvas->height;
 
@@ -432,13 +432,13 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
     }
 
     Handle<Value> args[] = { vtouchActions, vtouchXs, vtouchYs };
-    onFrameFun->Call(stageObject, 3, args);
+    jsgOnFrameFun->Call(jsgObject, 3, args);
 
     env->ReleaseIntArrayElements(jtouchActions, touchActions, 0);
     env->ReleaseIntArrayElements(jtouchXs,      touchXs,      0);
     env->ReleaseIntArrayElements(jtouchYs,      touchYs,      0);
   } else {
-    onFrameFun->Call(stageObject, 0, NULL);
+    jsgOnFrameFun->Call(jsgObject, 0, NULL);
   }
 
   // Copy stage canvas to surface
