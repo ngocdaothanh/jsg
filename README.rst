@@ -6,3 +6,8 @@ Features:
   or any JavaScript library that uses HTML5 canvas API
 * Sound
 * Plugins: Admob, Billing, Facebook, Twitter, Nakamap etc.
+
+Build JS
+========
+
+coffee -cb -o js_build js
