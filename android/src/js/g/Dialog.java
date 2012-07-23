@@ -25,7 +25,7 @@ public class Dialog {
             public void run() {
                 int commaPos = callbackId_message.indexOf(',');
                 final String callbackId = callbackId_message.substring(0, commaPos);
-                final String message    = callbackId_message.substring(commaPos);
+                final String message    = callbackId_message.substring(commaPos + 1);
 
                 new AlertDialog.Builder(JSGActivity.getInstance())
                 .setMessage(message)
