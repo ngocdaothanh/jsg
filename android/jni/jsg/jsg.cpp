@@ -107,7 +107,7 @@ static void jsLoadDefaults()
   jsLoad("scripts/jsg/jsg.js");  // Other scripts are loaded here
 }
 
-static void jsCacheStage()
+static void jsCacheCanvasAndOnFrame()
 {
   HandleScope scope;
 
@@ -372,14 +372,13 @@ JNIEXPORT void JNICALL Java_js_g_JSG_nativeInit(JNIEnv* env, jclass klass, jint 
   jsInitializeNative();
   jsLoadDefaults();
 
+  jsCacheCanvasAndOnFrame();
+
   const char *cmainScript = env->GetStringUTFChars(mainScript, NULL);
   char js[1024];
   sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", cmainScript, stageWidth, stageHeight);
   node::Run(js);
   env->ReleaseStringUTFChars(mainScript, cmainScript);
-
-  // jsg.stage should have been created
-  jsCacheStage();
 }
 
 JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js)
