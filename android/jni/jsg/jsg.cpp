@@ -112,9 +112,6 @@ static void jsCacheCanvasAndOnFrame()
   HandleScope scope;
 
   // https://groups.google.com/forum/?fromgroups#!topic/v8-users/RqdmlC0QHgY
-
-  Handle<Object> jsgObject = Handle<Object>::Cast(context->Global()->Get(String::New("jsg")));
-
   jsgObject       = Persistent<Object>::New(Handle<Object>::Cast(context->Global()->Get(String::New("jsg"))));
   jsgCanvasObject = Persistent<Object>::New(Handle<Object>::Cast(jsgObject->Get(String::New("canvas"))));
   jsgOnFrameFun   = Persistent<Function>::New(Handle<Function>::Cast(jsgObject->Get(String::New("onFrame"))));
@@ -372,13 +369,14 @@ JNIEXPORT void JNICALL Java_js_g_JSG_nativeInit(JNIEnv* env, jclass klass, jint 
   jsInitializeNative();
   jsLoadDefaults();
 
-  jsCacheCanvasAndOnFrame();
-
   const char *cmainScript = env->GetStringUTFChars(mainScript, NULL);
   char js[1024];
   sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", cmainScript, stageWidth, stageHeight);
   node::Run(js);
   env->ReleaseStringUTFChars(mainScript, cmainScript);
+
+  // Must be after jsg.fireReady because jsg.canvas is created at jsg.fireReady
+  jsCacheCanvasAndOnFrame();
 }
 
 JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js)
