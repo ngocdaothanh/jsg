@@ -35,6 +35,8 @@ class JSG
       for listener in @readyListeners
         listener(width, height)
 
+  drawLabel: jsgDrawLabel
+
   #-----------------------------------------------------------------------------
 
   onFrame: (touchActions, touchXs, touchYs) ->
