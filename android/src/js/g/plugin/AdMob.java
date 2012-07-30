@@ -74,7 +74,8 @@ public class AdMob {
                         // happens as soon as possible.
                         JSGActivity.getInstance().addOnPauseListener(new Runnable() {
                             public void run() {
-                                System.exit(0);
+                                if (!JSGActivity.getInstance().isActivityChangeInsideSameApp())
+                                    System.exit(0);
                             }
                         });
 

@@ -1,10 +1,13 @@
 package js.g;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.util.Log;
 
 public class JSGActivity extends Activity {
     private static JSGActivity instance = null;
@@ -49,6 +52,21 @@ public class JSGActivity extends Activity {
         synchronized (onDestroyListeners) {
             onDestroyListeners.add(runnable);
         }
+    }
+
+    /**
+     * Used at onPause listener to know if onPause has been fired because
+     * another activity has been launched inside outside the same app.
+     *
+     * Requires android.permission.GET_TASKS permissions in the manifest.
+     *
+     * http://stackoverflow.com/questions/5975811/how-to-check-if-an-activity-is-the-last-one-in-the-activity-stack-for-an-applica
+     */
+    public boolean isActivityChangeInsideSameApp() {
+        ActivityManager mngr = (ActivityManager) getSystemService(Activity.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> taskList = mngr.getRunningTasks(10);
+        boolean sameClass = taskList.get(0).topActivity.getClassName().equals(getClass().getName());
+        return (taskList.get(0).numActivities == 1 && sameClass);
     }
 
     //--------------------------------------------------------------------------

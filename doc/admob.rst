@@ -31,6 +31,12 @@ Modify AndroidManifest.xml and default.properties as instructed at
 `AdMob doc <https://developers.google.com/mobile-ads-sdk/docs/android/fundamentals>`_.
 Copy GoogleAdMobAdsSdk-6.0.1.jar to libs directory of your Android project.
 
+Also, add android.permission.GET_TASKS permission to AndroidManifest.xml:
+
+::
+
+  <uses-permission android:name="android.permission.GET_TASKS" />
+
 Activity example:
 
 ::
