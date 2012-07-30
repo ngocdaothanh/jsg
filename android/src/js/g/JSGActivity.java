@@ -7,7 +7,6 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.util.Log;
 
 public class JSGActivity extends Activity {
     private static JSGActivity instance = null;
