@@ -1,4 +1,7 @@
-# Usage: ruby 2c.rb <directory1> [directory2] [directory3]
+if ARGV.empty?
+  puts 'Usage: ruby 2c.rb <directory1> [directory2] [directory3]'
+  exit(1)
+end
 
 $file_names = []
 for d in ARGV
