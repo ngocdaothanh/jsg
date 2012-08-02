@@ -34,7 +34,7 @@ public class AdMob {
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         bottom.gravity = Gravity.BOTTOM;
         activity.addContentView(adView, bottom);
-        saveHeightToPrefsOnReceiveAd();
+        saveHeightToPrefsOnFirstReceiveAd();
     }
 
     public static void addToBottomIfOnline(String admobId) {
@@ -42,23 +42,23 @@ public class AdMob {
     }
 
     public static int getHeightFromPrefs() {
-        String height = Prefs.getString(PREFS_HEIGHT);
-        return (height == null)? 0 : Integer.parseInt(height);
+        return Prefs.getInt(PREFS_HEIGHT);
     }
 
     //--------------------------------------------------------------------------
 
-    private static void saveHeightToPrefsOnReceiveAd() {
-        String height = Prefs.getString(PREFS_HEIGHT);
-        if (height != null) return;
+    private static void saveHeightToPrefsOnFirstReceiveAd() {
+        int height = Prefs.getInt(PREFS_HEIGHT);
+        if (height != 0) return;
 
         adView.setAdListener(new AdListener() {
             OnPreDrawListener opdl;
+
             public void onReceiveAd(Ad arg0) {
                 // onReceiveAd is called every time a new ad is received.
                 // Skip if height has already been saved.
-                String height = Prefs.getString(PREFS_HEIGHT);
-                if (height != null) return;
+                int height = Prefs.getInt(PREFS_HEIGHT);
+                if (height != 0) return;
 
                 final ViewTreeObserver obs = adView.getViewTreeObserver();
                 opdl = new OnPreDrawListener() {
@@ -66,7 +66,7 @@ public class AdMob {
                         obs.removeOnPreDrawListener(opdl);
 
                         int height = adView.getHeight();
-                        Prefs.setString(PREFS_HEIGHT, "" + height);
+                        Prefs.setInt(PREFS_HEIGHT, height);
 
                         // The first run is only for getting the ad banner height.
                         // Ads will be displayed after app restart.
