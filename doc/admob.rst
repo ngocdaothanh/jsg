@@ -71,7 +71,7 @@ main.coffee example:
   jsg.ready((width, height) ->
     if jsg.netstate.isOnline()
       # Adjust stage height
-      heightAdMob = jsg.admob.getHeightFromPrefs()
+      heightAdMob = jsg.admob.getHeight()
       if heightAdMob > 0
         height -= heightAdMob
         jsg.stage.updateSize(width, height)

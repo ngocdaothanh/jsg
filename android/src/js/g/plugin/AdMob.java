@@ -19,7 +19,8 @@ import js.g.JSGActivity;
 import js.g.Prefs;
 
 public class AdMob {
-    private static final String PREFS_HEIGHT = "jsg/admob/height";
+    private static final String PREFS_HEIGHT         = "jsg/admob/height";
+    private static final String PREFS_SECOND_TIME_ON = "jsg/admob/secondTimeOn";
 
     private static AdView adView;
 
@@ -41,7 +42,7 @@ public class AdMob {
         if (NetState.isOnline() != null) addToBottom(admobId);
     }
 
-    public static int getHeightFromPrefs() {
+    public static int getHeight() {
         return Prefs.getInt(PREFS_HEIGHT);
     }
 
@@ -49,7 +50,11 @@ public class AdMob {
 
     private static void saveHeightToPrefsOnFirstReceiveAd() {
         int height = Prefs.getInt(PREFS_HEIGHT);
-        if (height != 0) return;
+        if (height != 0) {
+            int secondTimeOn = Prefs.getInt(PREFS_SECOND_TIME_ON);
+            if (secondTimeOn == 0) Prefs.setInt(PREFS_SECOND_TIME_ON, 1);
+            return;
+        }
 
         adView.setAdListener(new AdListener() {
             OnPreDrawListener opdl;

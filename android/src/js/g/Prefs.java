@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
 public class Prefs {
+    /** Default: null */
     public static synchronized String getString(String key) {
         SharedPreferences sp = JSGActivity.getInstance().getPreferences(Context.MODE_PRIVATE);
         return sp.getString(key, null);
@@ -24,6 +25,7 @@ public class Prefs {
 
     //--------------------------------------------------------------------------
 
+    /** Default: 0 */
     public static synchronized int getInt(String key) {
         SharedPreferences sp = JSGActivity.getInstance().getPreferences(Context.MODE_PRIVATE);
         return sp.getInt(key, 0);
