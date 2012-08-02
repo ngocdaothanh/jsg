@@ -51,6 +51,8 @@ class JSG
   prefs:
     getString: jsgPrefsGetString
     setString: jsgPrefsSetString
+    getInt:    jsgPrefsGetInt
+    setInt:    jsgPrefsSetInt
 
   android:
     callJava: (klass, staticMethod, message) ->
