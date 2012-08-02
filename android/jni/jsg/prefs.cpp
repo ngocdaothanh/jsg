@@ -90,7 +90,7 @@ Handle<Value> Prefs::GetInt(const Arguments& args)
   static jmethodID mid   = NULL;
   if (!klass) {
     klass = JSG::findClassAndMakeGlobal("js/g/Prefs");
-    mid   = env->GetStaticMethodID(klass, "getInt", "(Ljava/lang/String;)I;");
+    mid   = env->GetStaticMethodID(klass, "getInt", "(Ljava/lang/String;)I");
   }
 
   jstring jKey  = env->NewStringUTF(cKey);
