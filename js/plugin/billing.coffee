@@ -13,3 +13,4 @@ jsg.plugin.billing =
     return if !@purchaseds?
     for listener in @purchaseds
       listener(productId, isOK)
+    null

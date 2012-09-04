@@ -38,6 +38,7 @@ class Touch
           @fireUp(x, y)
         else
           @fireTap(x, y)
+    null
 
   fireDown: (x, y) ->
     for listener in @downListeners

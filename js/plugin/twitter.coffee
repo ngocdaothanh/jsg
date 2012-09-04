@@ -34,18 +34,22 @@ jsg.plugin.twitter =
     return if !@loginOKs?
     for listener in @loginOKs
       listener()
+    null
 
   fireLoginNG: ->
     return if !@loginNGs?
     for listener in @loginNGs
       listener()
+    null
 
   fireShareOK: ->
     return if !@shareOKs?
     for listener in @shareOKs
       listener()
+    null
 
   fireShareNG: ->
     return if !@shareNGs?
     for listener in @shareNGs
       listener()
+    null

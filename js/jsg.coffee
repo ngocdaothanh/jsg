@@ -16,6 +16,9 @@ class JSG
 
   #-----------------------------------------------------------------------------
 
+  # Set to false to hide FPS status
+  fps: true
+
   loadString: jsgLoadString
 
   loadJSON: (src) ->
@@ -29,19 +32,30 @@ class JSG
     @readyListeners ?= []
     @readyListeners.push(listener)
 
+  # Acts like the constructor
   fireReady: (width, height) ->
     [@canvas, @context] = @createCanvasAndContext(width, height)
     if @readyListeners?
       for listener in @readyListeners
         listener(width, height)
+    null
 
   drawLabel: jsgDrawLabel
 
   #-----------------------------------------------------------------------------
 
+  drawFPS: (dt) ->
+    fps = Math.ceil(1000 / dt)
+    ctx = @context
+    ctx.fillStyle   = '#0000ff'
+    ctx.strokeStyle = '#ffffff'
+    ctx.font        = 'bold 40px Impact'
+    ctx.fillText("#{fps} FPS", 10, 50)
+
   onFrame: (touchActions, touchXs, touchYs) ->
     @touch.onFrame(touchActions, touchXs, touchYs)
-    @fireTick()
+    dt = @fireTick()  # See tick.coffee
+    @drawFPS(dt) if @fps
 
   #-----------------------------------------------------------------------------
 
@@ -73,6 +87,7 @@ class JSG
       if @backButtonListeners?
         for listener in @backButtonListeners
           listener()
+      null
 
   quit: ->
     @android.callJava('js.g.JSGActivity', 'quit')
@@ -113,6 +128,7 @@ class JSG
     return if !@pauseListeners?
     for listener in @pauseListeners
       listener()
+    null
 
   resume: (listener) ->
     @resumeListeners ?= []
@@ -123,6 +139,7 @@ class JSG
     return if !@resumeListeners?
     for listener in @resumeListeners
       listener()
+    null
 
   # Can be passed as callback to jsg.pause
   pauseAllSound: =>
@@ -133,36 +150,37 @@ class JSG
   # args: fontFamily, src
   fontFace: jsgFontFace
 
-  # http://www.c-sharpcorner.com/UploadFile/72d20e/canvas-text-wrapping-using-html-5/
-  # Supports CJK (Chinese, Japanese, Korean - no spaces between characters) and \n
-  fillTextWrap: (context, text, x, y, maxWidth, lineHeight) ->
-    splitSegments = (paragraph) ->
-      SEGMENT_SEPARATOR = [' ']
+  # Private method, used by fillTextWrap
+  splitSegments: (paragraph) ->
+    SEGMENT_SEPARATOR = [' ']
 
-      ret = []
-      sofar = ''
+    ret = []
+    sofar = ''
 
-      for c in paragraph
-        if c.charCodeAt(0) > 255  # CJK - no spaces between characters
+    for c in paragraph
+      if c.charCodeAt(0) > 255  # CJK - no spaces between characters
+        if sofar.length > 0
+          ret.push(sofar)
+          sofar = ''
+        ret.push(c)
+      else
+        if c in SEGMENT_SEPARATOR
           if sofar.length > 0
             ret.push(sofar)
             sofar = ''
           ret.push(c)
         else
-          if c in SEGMENT_SEPARATOR
-            if sofar.length > 0
-              ret.push(sofar)
-              sofar = ''
-            ret.push(c)
-          else
-            sofar += c
+          sofar += c
 
-      ret.push(sofar) if sofar.length > 0
-      ret
+    ret.push(sofar) if sofar.length > 0
+    ret
 
+  # http://www.c-sharpcorner.com/UploadFile/72d20e/canvas-text-wrapping-using-html-5/
+  # Supports CJK (Chinese, Japanese, Korean - no spaces between characters) and \n
+  fillTextWrap: (context, text, x, y, maxWidth, lineHeight) ->
     paragraphs = text.split('\n')
     for paragraph in paragraphs
-      segments = splitSegments(paragraph)
+      segments = @splitSegments(paragraph)
       line = ''
 
       for segment in segments
@@ -178,6 +196,7 @@ class JSG
 
       context.fillText(line, x, y)
       y += lineHeight
+    null
 
 #-------------------------------------------------------------------------------
 

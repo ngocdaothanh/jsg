@@ -19,4 +19,4 @@ jsg.fireTick = ->
       # Check in case @tickListeners is changed by untick while we are looping
       listener(dt, t) if listener?
 
-  [dt, t]
+  dt
