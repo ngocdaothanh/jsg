@@ -20,22 +20,22 @@ Dependency libraries will be downloaded to:
 
 ::
 
-  monatsu1-android/jni/png
-  monatsu1-android/jni/pixman
-  monatsu1-android/jni/freetype2
-  monatsu1-android/jni/cairo
+  android/jni/png
+  android/jni/pixman
+  android/jni/freetype2
+  android/jni/cairo
 
 Copy:
 
 ::
 
-  monatsu1-android/jni/png/scripts/pnglibconf.h.prebuilt
+  android/jni/png/scripts/pnglibconf.h.prebuilt
 
 to:
 
 ::
 
-  monatsu1-android/jni/png/pnglibconf.h
+  android/jni/png/pnglibconf.h
 
 2.
 
@@ -43,7 +43,7 @@ cpu-features.c and cpu-features.h in Android NDK is needed by Pixman.
 
 ::
 
-  cd monatsu1-android/jni
+  cd android/jni
   ln -s path/to/android-ndk/sources/android/cpufeatures
 
 Example:
@@ -61,14 +61,14 @@ For Pixman:
 
 ::
 
-  cd monatsu1-android/jni/pixman
+  cd android/jni/pixman
   git checkout refs/tags/pixman-0.25.2
 
 For Cairo:
 
 ::
 
-  cd monatsu1-android/jni/cairo
+  cd android/jni/cairo
   git checkout refs/tags/1.11.2
 
 To see list of tags:
@@ -80,7 +80,7 @@ To see list of tags:
 Build
 -----
 
-From this Android project directory (monatsu1-android), run:
+From this Android project directory (android), run:
 path/to/android-ndk/ndk-build
 
 Example:
