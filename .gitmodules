@@ -1,0 +1,12 @@
+[submodule "android/jni/cairo"]
+        path = android/jni/cairo
+        url = git://git.cairographics.org/git/cairo
+[submodule "android/jni/pixman"]
+        path = android/jni/pixman
+        url = git://git.cairographics.org/git/pixman.git
+[submodule "android/jni/png"]
+        path = android/jni/png
+        url = git://libpng.git.sourceforge.net/gitroot/libpng/libpng
+[submodule "android/jni/freetype2"]
+        path = android/jni/freetype2
+        url = git://git.sv.gnu.org/freetype/freetype2.git
