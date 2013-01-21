@@ -1,23 +1,20 @@
 class JSG
   createCanvasAndContext: (width, height) ->
-    canvas  = new Canvas(width, height)
-    context = new Context2d(canvas)
-
-    # See Canvas.prototype.getContext in canvas.js
-    canvas._context2d = context
-    context.canvas    = canvas
-
-    # https://github.com/LearnBoost/node-canvas
-    # Antialias settings other than 'none' give slow/inaccurate result on Android
-    context.antialias      = 'none'
-    context.patternQuality = 'fast'
-
-    [canvas, context]
+    if @logCanvasMemory
+      d               = Math.round(width * height * 4)
+      @canvasUsedMem ?= 0
+      @canvasUsedMem += d
+      console.log("Memory used by canvases: #{d}/#{@canvasUsedMem}")
+    jsgCreateCanvasAndContext(width, height)
 
   #-----------------------------------------------------------------------------
 
   # Set to false to hide FPS status
   fps: true
+
+  logImageMemory: true
+
+  logCanvasMemory: true
 
   loadString: jsgLoadString
 
@@ -68,48 +65,13 @@ class JSG
     getInt:    jsgPrefsGetInt
     setInt:    jsgPrefsSetInt
 
-  android:
-    callJava: (klass, staticMethod, message) ->
-      klass = klass.split('.').join('/')
+  alert: jsgAlert
 
-      if typeof message == 'string'
-        jsgCallJava(klass, staticMethod, message)
-      else if typeof message == 'object'
-        jsgCallJava(klass, staticMethod, JSON.stringify(message))
-      else  # undefined
-        jsgCallJava(klass, staticMethod)
+  confirm: jsgConfirm
 
-    backButton: (listener) ->
-      @backButtonListeners ?= []
-      @backButtonListeners.push(listener)
+  quit: jsgQuit
 
-    fireBackButton: ->
-      if @backButtonListeners?
-        for listener in @backButtonListeners
-          listener()
-      null
-
-  quit: ->
-    @android.callJava('js.g.JSGActivity', 'quit')
-
-  locale:
-    getLanguage: ->
-      jsg.android.callJava('js.g.Locale', 'getLanguage')
-
-    getCountry: ->
-      jsg.android.callJava('js.g.Locale', 'getCountry')
-
-    getVariant: ->
-      jsg.android.callJava('js.g.Locale', 'getVariant')
-
-  alert: (message) ->
-    @android.callJava('js.g.Dialog', 'alert', message)
-
-  # Implement window.confirm feature
-  # callback: (boolean) ->
-  confirm: (message, callback) ->
-    callbackId = @callback.register(callback)
-    @android.callJava('js.g.Dialog', 'confirm', callbackId + ',' + message)
+  locale: jsgLocale
 
   # args: canvas, title, description
   saveCanvasToSystemGallery: jsgSaveCanvasToSystemGallery

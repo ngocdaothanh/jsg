@@ -43,3 +43,6 @@ class Sound
 
   pause: ->
     jsg.soundPool.pause(@streamId) if @streamId?
+
+Sound.pauseAll = ->
+  jsg.android.callJava('js.g.MediaPlayer', 'pauseAll', '')

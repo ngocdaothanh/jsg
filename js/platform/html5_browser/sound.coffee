@@ -26,10 +26,13 @@ class Sound
   pause: ->
     @audio.pause()
 
-Sound.mp3OrOgg(base) = ->
+Sound.mp3OrOgg = (base) ->
   if !@cachedCanPlayOgg?
     audio = new Audio('')
     @cachedCanPlayOgg = ('' != audio.canPlayType('audio/ogg'))
 
   ext = if @cachedCanPlayOgg then 'ogg' else 'mp3'
   base + '.' + ext
+
+Sound.pauseAll = ->
+  # TODO
