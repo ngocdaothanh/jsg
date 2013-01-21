@@ -104,7 +104,10 @@ static void jsLoadDefaults()
 {
   Console::LoadScript();
   Canvas::LoadScript();
-  jsLoad("scripts/jsg/jsg.js");  // Other scripts are loaded here
+
+  jsLoad("scripts/jsg/platform/android/before.js");
+  jsLoad("scripts/jsg/jsg.js");
+  jsLoad("scripts/jsg/platform/android/after.js");
 }
 
 static void jsCacheCanvasAndOnFrame()
