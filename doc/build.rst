@@ -62,7 +62,7 @@ For Pixman:
 ::
 
   cd android/jni/pixman
-  git checkout refs/tags/pixman-0.25.2
+  git checkout refs/tags/pixman-0.26.2
 
 For Cairo:
 
