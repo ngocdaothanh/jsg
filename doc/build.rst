@@ -39,7 +39,7 @@ to:
 
 2.
 
-cpu-features.c and cpu-features.h in Android NDK is needed by Pixman.
+cpu-features.c and cpu-features.h in Android NDK are needed by Pixman.
 
 ::
 
@@ -50,7 +50,7 @@ Example:
 
 ::
 
-  ln -s ~/opt/android-ndk-r8/sources/android/cpufeatures
+  ln -s ~/opt/android-ndk-r8d/sources/android/cpufeatures
 
 3.
 
@@ -87,7 +87,7 @@ Example:
 
 ::
 
-  ~/opt/android-ndk-r8/ndk-build
+  ~/opt/android-ndk-r8d/ndk-build
 
 Native library will be built and copied to libs directory.
 After that, build the Java part as normal.
@@ -136,7 +136,8 @@ Canvas for Node.js
 ~~~~~~~~~~~~~~~~~~
 
 https://github.com/LearnBoost/node-canvas
-Needs Cairo.
+
+Cairo is needed to build.
 
 Modification:
 * Image: Setting "src" will load image from assets directory
