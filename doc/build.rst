@@ -1,5 +1,5 @@
-Instructions to build
-=====================
+Build NDK lib
+=============
 
 Android NDK is needed, please download and install it:
 http://developer.android.com/sdk/ndk/index.html
@@ -90,7 +90,6 @@ Example:
   ~/opt/android-ndk-r8d/ndk-build
 
 Native library will be built and copied to libs directory.
-After that, build the Java part as normal.
 
 Dependency libs
 ---------------
@@ -150,3 +149,9 @@ Backups
 https://github.com/ngocdaothanh/v8_titanium
 https://github.com/ngocdaothanh/android-cairo
 https://github.com/ngocdaothanh/node-canvas
+
+Build Java lib
+==============
+
+After building the NDK lib, build the Java part as normal.
+See project.properties to know which dependency projects are needed.
