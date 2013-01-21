@@ -12,4 +12,4 @@ Build JS
 
 ::
 
-  coffee -cb -o js_build js
+  coffee --compile --bare --watch --output js_build/ js/
