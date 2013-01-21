@@ -4,8 +4,8 @@
 [submodule "android/jni/pixman"]
         path = android/jni/pixman
         url = git://git.cairographics.org/git/pixman.git
-[submodule "android/jni/png"]
-        path = android/jni/png
+[submodule "android/jni/libpng"]
+        path = android/jni/libpng
         url = git://libpng.git.sourceforge.net/gitroot/libpng/libpng
 [submodule "android/jni/freetype2"]
         path = android/jni/freetype2

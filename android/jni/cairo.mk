@@ -1,6 +1,6 @@
 LOCAL_PATH := $(call my-dir)
 
-include jni/png.mk
+include jni/libpng.mk
 include jni/pixman.mk
 include $(CLEAR_VARS)
 
@@ -128,7 +128,7 @@ LIBCAIRO_CFLAGS:=                                                   \
     -DHAVE_UINT64_T                                                 \
     -DCAIRO_HAS_PNG_FUNCTIONS=1                                     \
     -DCAIRO_HAS_FT_FONT=1                                           \
-    -Ijni/png -Ijni/cairo -Ijni/cairo/src -Ijni/cairo-extra -Ijni/freetype2/include \
+    -Ijni/libpng -Ijni/cairo -Ijni/cairo/src -Ijni/cairo-extra -Ijni/freetype2/include \
     -include "cairo-version.h" \
     -Wno-missing-field-initializers -Wno-attributes
 

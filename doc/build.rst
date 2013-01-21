@@ -28,13 +28,13 @@ Copy:
 
 ::
 
-  android/jni/png/scripts/pnglibconf.h.prebuilt
+  android/jni/libpng/scripts/pnglibconf.h.prebuilt
 
 to:
 
 ::
 
-  android/jni/png/pnglibconf.h
+  android/jni/libpng/pnglibconf.h
 
 2.
 
