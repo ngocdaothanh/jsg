@@ -39,6 +39,7 @@ LIBPIXMAN_CFLAGS := \
     -DUSE_ARM_NEON \
     -DUSE_ARM_SIMD \
     -DCAIRO_HAS_PNG_FUNCTIONS=1 \
+    -O2 \
     -Ijni/pixman/pixman -Ijni/pixman-extra \
     -include "pixman-elf-fix.h" -include "limits.h" \
     -Wno-missing-field-initializers
@@ -46,7 +47,7 @@ LIBPIXMAN_CFLAGS := \
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := libpixman
-LOCAL_CFLAGS    := -O2 $(LIBPIXMAN_CFLAGS)
+LOCAL_CFLAGS    := $(LIBPIXMAN_CFLAGS)
 LOCAL_LDFLAGS   := 
 LOCAL_SRC_FILES := $(LIBPIXMAN_SRC)
 LOCAL_STATIC_LIBRARIES := cpufeatures
