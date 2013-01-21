@@ -13,8 +13,7 @@ From the toplevel of the working tree, run:
 
 ::
 
-  git submodule init
-  git submodule update
+  git submodule update --init
 
 Dependency libraries will be downloaded to:
 
@@ -39,21 +38,6 @@ to:
 
 2.
 
-cpu-features.c and cpu-features.h in Android NDK are needed by Pixman.
-
-::
-
-  cd android/jni
-  ln -s path/to/android-ndk/sources/android/cpufeatures
-
-Example:
-
-::
-
-  ln -s ~/opt/android-ndk-r8d/sources/android/cpufeatures
-
-3.
-
 If there's building error at the build step (see Build section below),
 use the specific version of Pixman and Cairo:
 
@@ -69,7 +53,7 @@ For Cairo:
 ::
 
   cd android/jni/cairo
-  git checkout refs/tags/1.11.2
+  git checkout refs/tags/1.12.2
 
 To see list of tags:
 

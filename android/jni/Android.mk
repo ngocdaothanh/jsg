@@ -40,6 +40,8 @@ LOCAL_CFLAGS    := $(LIBPIXMAN_CFLAGS) $(LIBCAIRO_CFLAGS) $(JSG_CFLAGS)
 LOCAL_LDLIBS    := -lm -llog -ljnigraphics -lz -Ljni/v8 -lv8 -lGLESv2
 
 LOCAL_SRC_FILES := $(NODE_SRC) $(CANVAS_SRC) $(JSG_SRC)
-LOCAL_STATIC_LIBRARIES := libpng libpixman libcairo libfreetype2
+LOCAL_STATIC_LIBRARIES := libpng libpixman libcairo libfreetype2 cpufeatures
 
 include $(BUILD_SHARED_LIBRARY)
+
+$(call import-module,android/cpufeatures)
