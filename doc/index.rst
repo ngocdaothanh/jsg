@@ -6,7 +6,6 @@ JSG documentation
 
    overview
    directory_structure
-   sprite
    native
    android
    netstate
