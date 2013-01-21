@@ -153,5 +153,6 @@ https://github.com/ngocdaothanh/node-canvas
 Build Java lib
 ==============
 
-After building the NDK lib, build the Java part as normal.
-See project.properties to know which dependency projects are needed.
+After building the NDK lib, build the Java part as normal:
+* See project.properties to know dependency projects
+* Also see doc directory to know dependency .jar files
