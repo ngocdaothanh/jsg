@@ -1,5 +1,5 @@
 jsg.tick = (listener) ->
-  @tickListeners = [] if !@tickListeners?
+  @tickListeners ?= []
   @tickListeners.push(listener)
 
 jsg.untick = (listener) ->
@@ -7,16 +7,22 @@ jsg.untick = (listener) ->
   idx = @tickListeners.indexOf(listener)
   @tickListeners.splice(idx, 1) if idx != -1
 
+# Called by platform
 jsg.fireTick = ->
-  t = Date.now()
+  # Date.now is not available on all browsers!
+  # http://stackoverflow.com/questions/221294/how-do-you-get-a-timestamp-in-javascript
+  t = (new Date()).getTime()
 
-  @lastTickTimestamp ?= t
-  dt = t - @lastTickTimestamp
-  @lastTickTimestamp = t
+  if @lastTickTimestamp?
+    dt = t - @lastTickTimestamp
+    @lastTickTimestamp = t
 
-  if @tickListeners?
-    for listener in @tickListeners
-      # Check in case @tickListeners is changed by untick while we are looping
-      listener(dt, t) if listener?
+    if @tickListeners?
+      for listener in @tickListeners
+        # Check in case @tickListeners is changed by untick while we are looping
+        listener(dt, t) if listener?
 
-  dt
+    dt
+  else
+    @lastTickTimestamp = t
+    0

@@ -21,7 +21,21 @@ class Touch
     @tapListeners.push(listener)
     this
 
+  unlisten: (listener) ->
+    idx = @downListeners.indexOf(listener)
+    @downListeners.splice(idx, 1) if idx != -1
+
+    idx = @upListeners.indexOf(listener)
+    @upListeners.splice(idx, 1) if idx != -1
+
+    idx = @moveListeners.indexOf(listener)
+    @moveListeners.splice(idx, 1) if idx != -1
+
+    idx = @tapListeners.indexOf(listener)
+    @tapListeners.splice(idx, 1) if idx != -1
+
   #-----------------------------------------------------------------------------
+  # Below methods are called by platform
 
   onFrame: (touchActions, touchXs, touchYs) ->
     if touchActions?
@@ -59,21 +73,6 @@ class Touch
     for listener in @tapListeners
       listener(x, y)
     null
-
-  #-----------------------------------------------------------------------------
-
-  unlisten: (listener) ->
-    idx = @downListeners.indexOf(listener)
-    @downListeners.splice(idx, 1) if idx != -1
-
-    idx = @upListeners.indexOf(listener)
-    @upListeners.splice(idx, 1) if idx != -1
-
-    idx = @moveListeners.indexOf(listener)
-    @moveListeners.splice(idx, 1) if idx != -1
-
-    idx = @tapListeners.indexOf(listener)
-    @tapListeners.splice(idx, 1) if idx != -1
 
 #-------------------------------------------------------------------------------
 

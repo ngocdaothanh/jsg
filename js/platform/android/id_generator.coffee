@@ -1,4 +1,4 @@
-# Used mostly for passing reference from JS to native platform (e.g. Java).
+# Used mostly for passing reference from JS to native platform (e.g. Native Java).
 class IdGenerator
   constructor: ->
     @_next = 0

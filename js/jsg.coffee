@@ -202,18 +202,8 @@ class JSG
 
 jsg = new JSG
 
-# Global variables should be attached to "window" object
-window = window || {}
-
-#-------------------------------------------------------------------------------
-
-jsg.load('scripts/jsg/id_generator.js')
-jsg.load('scripts/jsg/callback.js')
-
 jsg.load('scripts/jsg/tick.js')
 jsg.load('scripts/jsg/timer.js')
 
-jsg.load('scripts/jsg/sound_pool.js')
 jsg.load('scripts/jsg/image_cache.js')
-
 jsg.load('scripts/jsg/touch.js')

@@ -1,4 +1,4 @@
-# For storing callback functions to be called from native platform (e.g. Java).
+# For storing callback functions to be called from native platform (e.g. Android Java).
 class Callback
   constructor: ->
     @id_fun      = {}

@@ -18,8 +18,6 @@ class SoundPool
   pause: (streamID) ->
     jsg.android.callJava('js.g.SoundPool', 'pause', streamID)
 
-#-------------------------------------------------------------------------------
-
 jsg.soundPool = new SoundPool
 
 #-------------------------------------------------------------------------------
