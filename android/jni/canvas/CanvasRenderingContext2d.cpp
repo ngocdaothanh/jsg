@@ -128,7 +128,7 @@ Context2d::Context2d(Canvas *canvas) {
   state->textAlignment = -1;
   state->fillPattern = state->strokePattern = NULL;
   state->fillGradient = state->strokeGradient = NULL;
-  state->textBaseline = NULL;
+  state->textBaseline = 0;
   rgba_t transparent = { 0,0,0,1 };
   rgba_t transparent_black = { 0,0,0,0 };
   state->fill = transparent;
