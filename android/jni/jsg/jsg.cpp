@@ -421,9 +421,10 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
   int     height = canvas->height;
 
   cairo_surface_t* surface = canvas->surface();
+  //cairo_surface_flush(surface);
   unsigned char* argb = cairo_image_surface_get_data(surface);
-  memset(argb, 255, width * height * 4);
-  cairo_surface_mark_dirty(surface);
+  //memset(argb, 0, width * height * 4);
+  //cairo_surface_mark_dirty(surface);
 
   // Fire events and draw to stage canvas
 
