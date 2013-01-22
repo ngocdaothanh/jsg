@@ -57,7 +57,7 @@ onDocumentReady = ->
       [x, y] = getEventElementXY(e)
       jsg.touch.fireTap(x, y)
 
-    fps = 40
+    fps = 60
     setInterval('jsg.fireTick()', 1000 / fps)
 
   $(window).load(onWindowLoad)
