@@ -28,6 +28,3 @@ setTimeout    = jsg.setTimeout
 clearTimeout  = jsg.clearTimeout
 setInterval   = jsg.setInterval
 clearInterval = jsg.clearInterval
-
-# App global variables should be attached to "window" object
-window = {}
