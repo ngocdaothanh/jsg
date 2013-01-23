@@ -28,3 +28,7 @@ setTimeout    = jsg.setTimeout
 clearTimeout  = jsg.clearTimeout
 setInterval   = jsg.setInterval
 clearInterval = jsg.clearInterval
+
+# Some JS code use these names (ex: EaselJS)
+HTMLCanvasElement = Canvas
+HTMLImageElement  = Image
