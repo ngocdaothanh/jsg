@@ -1,3 +1,5 @@
+jsg.platform = 'NetFront'
+
 getEventElementXY = (event) ->
   target = event.target
   offset = $(target).offset()

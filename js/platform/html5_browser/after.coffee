@@ -1,3 +1,5 @@
+jsg.platform = 'HTML5'
+
 jsg.load('scripts/jsg/platform/android/sound.js')
 
 getEventElementXY = (event) ->

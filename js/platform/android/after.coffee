@@ -1,3 +1,5 @@
+jsg.platform = 'Android'
+
 jsg.android =
   callJava: (klass, staticMethod, message) ->
     klass = klass.split('.').join('/')
