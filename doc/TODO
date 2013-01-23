@@ -1,3 +1,5 @@
+* Support loading .jpg and .gif images (define HAVE_JPEG and HAVE_GIF when building):
+  http://anongit.freedesktop.org/git/libjpeg.git/
 * Remove jsg.load, instead use AMD or CJS library loading mechanism:
   http://requirejs.org/docs/whyamd.html
 * Support iOS and normal browser
