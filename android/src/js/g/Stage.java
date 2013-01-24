@@ -1,38 +1,38 @@
 package js.g;
 
-import java.util.ArrayList;
-
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.content.Context;
+import android.graphics.PixelFormat;
+import android.opengl.GLSurfaceView;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
-public class Stage extends SurfaceView implements SurfaceHolder.Callback {
-    private static Stage instance;
+import javax.microedition.khronos.egl.EGL10;
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.egl.EGLContext;
+import javax.microedition.khronos.egl.EGLDisplay;
+import javax.microedition.khronos.opengles.GL10;
+
+/**
+ * Based on hello-gl2 sample of NDK.
+ *
+ * FPS controlling is not performed. Cocos2d 2.1.0 says:
+ * "FPS controlling algorithm is not accurate, and it will slow down FPS
+ * on some devices. So comment FPS controlling code."
+ */
+public class Stage extends GLSurfaceView implements GLSurfaceView.Renderer {
+    private static String TAG = "JSG Stage";
+    private static final boolean DEBUG = false;
+
+    private static Stage instance = null;
 
     public static Stage getInstance() {
         return instance;
     }
-
-    //--------------------------------------------------------------------------
-
-    private View   splash;
-    private String mainScript;
-
-    private SurfaceHolder surfaceHolder;
-    private boolean       running;
-    private Bitmap        bitmap;
-
-    private ArrayList<Runnable> queuedEvents = new ArrayList<Runnable>();
-
-    private native static void nativeOnDrawFrame(
-            Bitmap bitmap,
-            int[] touchActions, int[] touchXs, int[] touchYs, int numTouches);
 
     //--------------------------------------------------------------------------
 
@@ -59,6 +59,9 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
 
     //--------------------------------------------------------------------------
 
+    private View   splash;
+    private String mainScript;
+
     public Stage(View splash, String mainScript) {
         super(JSGActivity.getInstance());
         instance = this;
@@ -77,90 +80,267 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
             }
         });
 
-        surfaceHolder = getHolder();
-        surfaceHolder.addCallback(this);
+        init(false, 0, 0);
     }
 
-    public void surfaceChanged(SurfaceHolder holder, int format, final int width, final int height) {
-        if (!JSG.isReady()) {
-            // Display splash
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT);
-            JSGActivity.getInstance().addContentView(splash, lp);
+    public Stage(Context context, boolean translucent, int depth, int stencil) {
+        super(context);
+        init(translucent, depth, stencil);
+    }
 
-            // Start game thread
-            new Thread(new Runnable() {
-                public void run() {
-                    JSG.init(mainScript, width, height);
+    private void init(boolean translucent, int depth, int stencil) {
 
-                    // Order of bytes are actually RGBA
-                    bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        /* By default, GLSurfaceView() creates a RGB_565 opaque surface.
+         * If we want a translucent one, we should change the surface's
+         * format here, using PixelFormat.TRANSLUCENT for GL Surfaces
+         * is interpreted as any 32-bit surface with alpha by SurfaceFlinger.
+         */
+        if (translucent) {
+            this.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        }
 
-                    // Remove splash
-                    JSG.runOnUiThread(new Runnable() {
-                        public void run() {
-                            // http://stackoverflow.com/questions/3080577/removing-a-view-from-an-activity
-                            ViewGroup vg = (ViewGroup) (splash.getParent());
-                            vg.removeView(splash);
-                        }
-                    });
+        /* Setup the context factory for 2.0 rendering.
+         * See ContextFactory class definition below
+         */
+        setEGLContextFactory(new ContextFactory());
 
-                    gameLoop();
-                }
-            }).start();
+        /* We need to choose an EGLConfig that matches the format of
+         * our surface exactly. This is going to be done in our
+         * custom config chooser. See ConfigChooser class definition
+         * below.
+         */
+        setEGLConfigChooser( translucent ?
+                             new ConfigChooser(8, 8, 8, 8, depth, stencil) :
+                             new ConfigChooser(5, 6, 5, 0, depth, stencil) );
+
+        /* Set the renderer responsible for frame rendering */
+        setRenderer(this);
+    }
+
+    private static class ContextFactory implements GLSurfaceView.EGLContextFactory {
+        private static int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+        public EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig eglConfig) {
+            Log.i(TAG, "Creating OpenGL ES 2.0 context");
+            checkEglError("Before eglCreateContext", egl);
+            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+            EGLContext context = egl.eglCreateContext(display, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
+            checkEglError("After eglCreateContext", egl);
+            return context;
+        }
+
+        public void destroyContext(EGL10 egl, EGLDisplay display, EGLContext context) {
+            egl.eglDestroyContext(display, context);
         }
     }
 
-    public void surfaceCreated(SurfaceHolder holder) {
-        running = true;
+    private static void checkEglError(String prompt, EGL10 egl) {
+        int error;
+        while ((error = egl.eglGetError()) != EGL10.EGL_SUCCESS) {
+            Log.e(TAG, String.format("%s: EGL error: 0x%x", prompt, error));
+        }
     }
 
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        running = false;
-    }
+    private static class ConfigChooser implements GLSurfaceView.EGLConfigChooser {
+        public ConfigChooser(int r, int g, int b, int a, int depth, int stencil) {
+            mRedSize = r;
+            mGreenSize = g;
+            mBlueSize = b;
+            mAlphaSize = a;
+            mDepthSize = depth;
+            mStencilSize = stencil;
+        }
 
-    private void gameLoop() {
-        while (true) {
-            if (running) {
-                Canvas canvas = null;
-                try {
-                    canvas = surfaceHolder.lockCanvas();
-                    if (canvas != null) {
-                        synchronized (queuedEvents) {
-                            for (Runnable runnable : queuedEvents) {
-                                runnable.run();
-                            }
-                            queuedEvents.clear();
-                        }
+        /* This EGL config specification is used to specify 2.0 rendering.
+         * We use a minimum size of 4 bits for red/green/blue, but will
+         * perform actual matching in chooseConfig() below.
+         */
+        private static int EGL_OPENGL_ES2_BIT = 4;
+        private static int[] s_configAttribs2 =
+        {
+            EGL10.EGL_RED_SIZE, 4,
+            EGL10.EGL_GREEN_SIZE, 4,
+            EGL10.EGL_BLUE_SIZE, 4,
+            EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL10.EGL_NONE
+        };
 
-                        synchronized (touchLock) {
-                            for (int i = 0; i < numTouches; i++) {
-                                touchActions2[i] = touchActions[i];
-                                touchXs2     [i] = touchXs     [i];
-                                touchYs2     [i] = touchYs     [i];
-                            }
-                            numTouches2 = numTouches;
-                            numTouches = 0;
-                        }
-                        nativeOnDrawFrame(bitmap, touchActions2, touchXs2, touchYs2, numTouches2);
-                        canvas.drawBitmap(bitmap, 0, 0, null);
-                    }
-                } finally {
-                    // Do this in a finally so that if an exception is thrown
-                    // during the above, we don't leave the Surface in an
-                    // inconsistent state
-                    if (canvas != null) surfaceHolder.unlockCanvasAndPost(canvas);
-                }
-            } else {
-                try { Thread.sleep(500); } catch (Exception e) {}
+        public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display) {
+
+            /* Get the number of minimally matching EGL configurations
+             */
+            int[] num_config = new int[1];
+            egl.eglChooseConfig(display, s_configAttribs2, null, 0, num_config);
+
+            int numConfigs = num_config[0];
+
+            if (numConfigs <= 0) {
+                throw new IllegalArgumentException("No configs match configSpec");
+            }
+
+            /* Allocate then read the array of minimally matching EGL configs
+             */
+            EGLConfig[] configs = new EGLConfig[numConfigs];
+            egl.eglChooseConfig(display, s_configAttribs2, configs, numConfigs, num_config);
+
+            if (DEBUG) {
+                 printConfigs(egl, display, configs);
+            }
+            /* Now return the "best" one
+             */
+            return chooseConfig(egl, display, configs);
+        }
+
+        public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display,
+                EGLConfig[] configs) {
+            for(EGLConfig config : configs) {
+                int d = findConfigAttrib(egl, display, config,
+                        EGL10.EGL_DEPTH_SIZE, 0);
+                int s = findConfigAttrib(egl, display, config,
+                        EGL10.EGL_STENCIL_SIZE, 0);
+
+                // We need at least mDepthSize and mStencilSize bits
+                if (d < mDepthSize || s < mStencilSize)
+                    continue;
+
+                // We want an *exact* match for red/green/blue/alpha
+                int r = findConfigAttrib(egl, display, config,
+                        EGL10.EGL_RED_SIZE, 0);
+                int g = findConfigAttrib(egl, display, config,
+                            EGL10.EGL_GREEN_SIZE, 0);
+                int b = findConfigAttrib(egl, display, config,
+                            EGL10.EGL_BLUE_SIZE, 0);
+                int a = findConfigAttrib(egl, display, config,
+                        EGL10.EGL_ALPHA_SIZE, 0);
+
+                if (r == mRedSize && g == mGreenSize && b == mBlueSize && a == mAlphaSize)
+                    return config;
+            }
+            return null;
+        }
+
+        private int findConfigAttrib(EGL10 egl, EGLDisplay display,
+                EGLConfig config, int attribute, int defaultValue) {
+
+            if (egl.eglGetConfigAttrib(display, config, attribute, mValue)) {
+                return mValue[0];
+            }
+            return defaultValue;
+        }
+
+        private void printConfigs(EGL10 egl, EGLDisplay display,
+            EGLConfig[] configs) {
+            int numConfigs = configs.length;
+            Log.i(TAG, String.format("%d configurations", numConfigs));
+            for (int i = 0; i < numConfigs; i++) {
+                Log.i(TAG, String.format("Configuration %d:\n", i));
+                printConfig(egl, display, configs[i]);
             }
         }
+
+        private void printConfig(EGL10 egl, EGLDisplay display,
+                EGLConfig config) {
+            int[] attributes = {
+                    EGL10.EGL_BUFFER_SIZE,
+                    EGL10.EGL_ALPHA_SIZE,
+                    EGL10.EGL_BLUE_SIZE,
+                    EGL10.EGL_GREEN_SIZE,
+                    EGL10.EGL_RED_SIZE,
+                    EGL10.EGL_DEPTH_SIZE,
+                    EGL10.EGL_STENCIL_SIZE,
+                    EGL10.EGL_CONFIG_CAVEAT,
+                    EGL10.EGL_CONFIG_ID,
+                    EGL10.EGL_LEVEL,
+                    EGL10.EGL_MAX_PBUFFER_HEIGHT,
+                    EGL10.EGL_MAX_PBUFFER_PIXELS,
+                    EGL10.EGL_MAX_PBUFFER_WIDTH,
+                    EGL10.EGL_NATIVE_RENDERABLE,
+                    EGL10.EGL_NATIVE_VISUAL_ID,
+                    EGL10.EGL_NATIVE_VISUAL_TYPE,
+                    0x3030, // EGL10.EGL_PRESERVED_RESOURCES,
+                    EGL10.EGL_SAMPLES,
+                    EGL10.EGL_SAMPLE_BUFFERS,
+                    EGL10.EGL_SURFACE_TYPE,
+                    EGL10.EGL_TRANSPARENT_TYPE,
+                    EGL10.EGL_TRANSPARENT_RED_VALUE,
+                    EGL10.EGL_TRANSPARENT_GREEN_VALUE,
+                    EGL10.EGL_TRANSPARENT_BLUE_VALUE,
+                    0x3039, // EGL10.EGL_BIND_TO_TEXTURE_RGB,
+                    0x303A, // EGL10.EGL_BIND_TO_TEXTURE_RGBA,
+                    0x303B, // EGL10.EGL_MIN_SWAP_INTERVAL,
+                    0x303C, // EGL10.EGL_MAX_SWAP_INTERVAL,
+                    EGL10.EGL_LUMINANCE_SIZE,
+                    EGL10.EGL_ALPHA_MASK_SIZE,
+                    EGL10.EGL_COLOR_BUFFER_TYPE,
+                    EGL10.EGL_RENDERABLE_TYPE,
+                    0x3042 // EGL10.EGL_CONFORMANT
+            };
+            String[] names = {
+                    "EGL_BUFFER_SIZE",
+                    "EGL_ALPHA_SIZE",
+                    "EGL_BLUE_SIZE",
+                    "EGL_GREEN_SIZE",
+                    "EGL_RED_SIZE",
+                    "EGL_DEPTH_SIZE",
+                    "EGL_STENCIL_SIZE",
+                    "EGL_CONFIG_CAVEAT",
+                    "EGL_CONFIG_ID",
+                    "EGL_LEVEL",
+                    "EGL_MAX_PBUFFER_HEIGHT",
+                    "EGL_MAX_PBUFFER_PIXELS",
+                    "EGL_MAX_PBUFFER_WIDTH",
+                    "EGL_NATIVE_RENDERABLE",
+                    "EGL_NATIVE_VISUAL_ID",
+                    "EGL_NATIVE_VISUAL_TYPE",
+                    "EGL_PRESERVED_RESOURCES",
+                    "EGL_SAMPLES",
+                    "EGL_SAMPLE_BUFFERS",
+                    "EGL_SURFACE_TYPE",
+                    "EGL_TRANSPARENT_TYPE",
+                    "EGL_TRANSPARENT_RED_VALUE",
+                    "EGL_TRANSPARENT_GREEN_VALUE",
+                    "EGL_TRANSPARENT_BLUE_VALUE",
+                    "EGL_BIND_TO_TEXTURE_RGB",
+                    "EGL_BIND_TO_TEXTURE_RGBA",
+                    "EGL_MIN_SWAP_INTERVAL",
+                    "EGL_MAX_SWAP_INTERVAL",
+                    "EGL_LUMINANCE_SIZE",
+                    "EGL_ALPHA_MASK_SIZE",
+                    "EGL_COLOR_BUFFER_TYPE",
+                    "EGL_RENDERABLE_TYPE",
+                    "EGL_CONFORMANT"
+            };
+            int[] value = new int[1];
+            for (int i = 0; i < attributes.length; i++) {
+                int attribute = attributes[i];
+                String name = names[i];
+                if ( egl.eglGetConfigAttrib(display, config, attribute, value)) {
+                    Log.i(TAG, String.format("  %s: %d\n", name, value[0]));
+                } else {
+                    // Log.w(TAG, String.format("  %s: failed\n", name));
+                    while (egl.eglGetError() != EGL10.EGL_SUCCESS);
+                }
+            }
+        }
+
+        // Subclasses can adjust these values:
+        protected int mRedSize;
+        protected int mGreenSize;
+        protected int mBlueSize;
+        protected int mAlphaSize;
+        protected int mDepthSize;
+        protected int mStencilSize;
+        private int[] mValue = new int[1];
     }
 
-    public void queueEvent(Runnable runnable) {
-        synchronized (queuedEvents) {
-            queuedEvents.add(runnable);
+    //--------------------------------------------------------------------------
+
+    private int width, height;
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        if (oldw == 0 && oldh == 0) {
+            width  = w;
+            height = h;
         }
     }
 
@@ -195,5 +375,51 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         return true;
+    }
+
+    //--------------------------------------------------------------------------
+
+    private static native void nativeOnDrawFrame(int[] touchActions, int[] touchXs, int[] touchYs, int numTouches);
+
+    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        // Current thread is game thread
+
+        // Display splash
+        JSG.runOnUiThread(new Runnable() {
+            public void run() {
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT);
+                JSGActivity.getInstance().addContentView(splash, lp);
+            }
+        });
+
+        JSG.init(mainScript, width, height);
+
+        // Remove splash
+        JSG.runOnUiThread(new Runnable() {
+            public void run() {
+                // http://stackoverflow.com/questions/3080577/removing-a-view-from-an-activity
+                ViewGroup vg = (ViewGroup) (splash.getParent());
+                vg.removeView(splash);
+            }
+        });
+    }
+
+    public void onSurfaceChanged(GL10 gl, int w, int h) {
+    }
+
+    public void onDrawFrame(GL10 gl) {
+        synchronized (touchLock) {
+            for (int i = 0; i < numTouches; i++) {
+                touchActions2[i] = touchActions[i];
+                touchXs2     [i] = touchXs     [i];
+                touchYs2     [i] = touchYs     [i];
+            }
+            numTouches2 = numTouches;
+            numTouches = 0;
+        }
+
+        nativeOnDrawFrame(touchActions2, touchXs2, touchYs2, numTouches2);
     }
 }

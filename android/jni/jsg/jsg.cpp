@@ -1,5 +1,6 @@
 #include "jsg.h"
 #include "log.h"
+#include "gl.h"
 #include "label.h"
 #include "media_player.h"
 #include "prefs.h"
@@ -346,27 +347,6 @@ Handle<Value> JSG::SaveCanvasToSystemGallery(const Arguments& args)
   return Undefined();
 }
 
-static void argb2rgba(unsigned char* argb, unsigned char* rgba, int width, int height)
-{
-  unsigned char* dst = rgba;
-  for (int y = 0; y < height; y++) {
-    uint32_t *row = (uint32_t *)(argb + (width * 4) * y);
-    for (int x = 0; x < width; x++) {
-      int bx = x * 4;
-      uint32_t *pixel = row + x;
-      uint8_t a = *pixel >> 24;
-      uint8_t r = *pixel >> 16;
-      uint8_t g = *pixel >> 8;
-      uint8_t b = *pixel;
-      dst[bx + 3] = a;
-      dst[bx + 0] = r;
-      dst[bx + 1] = g;
-      dst[bx + 2] = b;
-    }
-    dst += width * 4;
-  }
-}
-
 //------------------------------------------------------------------------------
 
 extern "C" {
@@ -382,6 +362,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 JNIEXPORT void JNICALL Java_js_g_JSG_nativeInit(JNIEnv* env, jclass klass, jint stageWidth, jint stageHeight, jstring mainScript)
 {
   JSG::env = env;
+
+  GL::setupGraphics(stageWidth, stageHeight);
 
   jsInitializeNative();
   jsLoadDefaults();
@@ -406,7 +388,6 @@ JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js
 }
 
 JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass klass,
-    jobject bitmap,
     jintArray jtouchActions, jintArray jtouchXs, jintArray jtouchYs, jint numTouches)
 {
   // This function is run every frame, thus must be optimized.
@@ -457,11 +438,7 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
   }
 
   // Copy stage canvas to surface
-
-  unsigned char* rgba;
-  AndroidBitmap_lockPixels(env, bitmap, (void**) &rgba);
-  argb2rgba(argb, rgba, width, height);
-  AndroidBitmap_unlockPixels(env, bitmap);
+  GL::draw(argb, width, height);
 }
 
 }

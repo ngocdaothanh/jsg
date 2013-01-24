@@ -20,6 +20,8 @@ CANVAS_SRC = \
 	       canvas/FontFace.cpp
 
 JSG_SRC = \
+         jsg/matrix.cpp \
+         jsg/gl.cpp \
          jsg/label.cpp \
          jsg/log.cpp \
          jsg/jsg.cpp \
