@@ -1,3 +1,6 @@
+# Make "window" the global scope
+window = this
+
 jsgCreateCanvasAndContext = (width, height) ->
   canvas  = new Canvas(width, height)
   context = new Context2d(canvas)

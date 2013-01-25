@@ -39,16 +39,6 @@ JNIEnv* JSG::env;
 
 //------------------------------------------------------------------------------
 
-Handle<Value> windowGetter(Local<String> property, const AccessorInfo &info) {
-  return Context::GetCurrent()->Global()->Get(property);
-}
-
-Handle<Value> windowSetter(Local<String> property, Local<Value> value, const AccessorInfo &info) {
-  HandleScope scope;
-  Context::GetCurrent()->Global()->Set(property, value);
-  return scope.Close(value);
-}
-
 static void jsInitializeNative()
 {
   HandleScope scope;
@@ -68,10 +58,6 @@ static void jsInitializeNative()
   global->Set(String::New("jsgFontFace"),                  FunctionTemplate::New(JSG::FontFace));
   global->Set(String::New("jsgCallJava"),                  FunctionTemplate::New(JSG::CallJava));
   global->Set(String::New("jsgSaveCanvasToSystemGallery"), FunctionTemplate::New(JSG::SaveCanvasToSystemGallery));
-
-  Handle<ObjectTemplate> window = ObjectTemplate::New();
-  window->SetNamedPropertyHandler(windowGetter, windowSetter);
-  global->Set(String::New("window"), window);
 
   context = Context::New(NULL, global);
   context->Enter();
