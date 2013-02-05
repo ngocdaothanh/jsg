@@ -1,6 +1,7 @@
 JSG is a cross-platform JavaScript game engine for web and smartphones.
 
-Features:
+Features
+--------
 
 * Rendering: HTML5 canvas API, you can use `Covas <https://github.com/ngocdaothanh/covas>`_
   or any JavaScript library that uses HTML5 canvas API
@@ -8,7 +9,7 @@ Features:
 * Plugins: AdMob, Billing, Facebook, Twitter, Nakamap etc.
 
 Build JS
-========
+--------
 
 ::
 
