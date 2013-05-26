@@ -71,7 +71,7 @@ Example:
 
 ::
 
-  ~/opt/android-ndk-r8d/ndk-build
+  ~/opt/android-ndk-r8e/ndk-build
 
 Native library will be built and copied to libs directory.
 
