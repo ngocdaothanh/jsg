@@ -90,10 +90,12 @@ Build as is. No modification is needed.
 PNG
 ~~~
 
+libpng-1.6.1 should be used if there's any problem.
+
 See:
-http://www.usefullcode.net/2010/12/android_ndklibpng.html
-http://blog.livedoor.jp/itahidamito/archives/51676198.html
-libpng-1.5.10 should be used if there's any problem
+
+* http://www.usefullcode.net/2010/12/android_ndklibpng.html
+* http://blog.livedoor.jp/itahidamito/archives/51676198.html
 
 Freetype2
 ~~~~~~~~~
@@ -110,6 +112,7 @@ Build script is modified to build with PNG and Freetype2 support,
 so that PNG images and custom fonts can be loaded and drawn.
 
 pixman.mk has been modified:
+
 * LOCAL_CFLAGS:  added -Ijni/cpufeatures and -include "limits.h"
 * LIBPIXMAN_SRC: added pixman/pixman/pixman-noop.c and cpufeatures/cpu-features.c
 
