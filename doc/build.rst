@@ -46,14 +46,14 @@ For Pixman:
 ::
 
   cd android/jni/pixman
-  git checkout refs/tags/pixman-0.26.2
+  git checkout pixman-0.26.2
 
 For Cairo:
 
 ::
 
   cd android/jni/cairo
-  git checkout refs/tags/1.12.2
+  git checkout 1.12.14
 
 To see list of tags:
 
