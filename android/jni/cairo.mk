@@ -70,6 +70,7 @@ LIBCAIRO_SRC = \
          cairo/src/cairo-path-in-fill.c                \
          cairo/src/cairo-path-stroke-boxes.c           \
          cairo/src/cairo-path-stroke-polygon.c         \
+         cairo/src/cairo-path-stroke-traps.c           \
          cairo/src/cairo-path-stroke-tristrip.c        \
          cairo/src/cairo-path-stroke.c                 \
          cairo/src/cairo-path.c                        \
