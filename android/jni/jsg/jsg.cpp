@@ -4,7 +4,9 @@
 #include "media_player.h"
 #include "prefs.h"
 
-#include <android/bitmap.h>
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+
 #include <canvas/FontFace.h>
 #include <canvas/Canvas.h>
 
@@ -36,6 +38,8 @@ static Persistent<Function> jsgOnFrameFun;
 // http://android-developers.blogspot.jp/2011/11/jni-local-reference-changes-in-ics.html
 
 JNIEnv* JSG::env;
+
+ANativeWindow* window;
 
 //------------------------------------------------------------------------------
 
@@ -332,27 +336,6 @@ Handle<Value> JSG::SaveCanvasToSystemGallery(const Arguments& args)
   return Undefined();
 }
 
-static void argb2rgba(unsigned char* argb, unsigned char* rgba, int width, int height)
-{
-  unsigned char* dst = rgba;
-  for (int y = 0; y < height; y++) {
-    uint32_t *row = (uint32_t *)(argb + (width * 4) * y);
-    for (int x = 0; x < width; x++) {
-      int bx = x * 4;
-      uint32_t *pixel = row + x;
-      uint8_t a = *pixel >> 24;
-      uint8_t r = *pixel >> 16;
-      uint8_t g = *pixel >> 8;
-      uint8_t b = *pixel;
-      dst[bx + 3] = a;
-      dst[bx + 0] = r;
-      dst[bx + 1] = g;
-      dst[bx + 2] = b;
-    }
-    dst += width * 4;
-  }
-}
-
 //------------------------------------------------------------------------------
 
 extern "C" {
@@ -391,8 +374,61 @@ JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js
   env->ReleaseStringUTFChars(js, cjs);
 }
 
+JNIEXPORT void JNICALL Java_js_g_Stage_nativeSetSurface(JNIEnv* env, jclass klass, jobject surface)
+{
+  window = ANativeWindow_fromSurface(env, surface);
+  ANativeWindow_setBuffersGeometry(window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+}
+
+JNIEXPORT void JNICALL Java_js_g_Stage_nativeUnsetSurface(JNIEnv* env, jclass klass)
+{
+  ANativeWindow_release(window);
+  window = NULL;
+}
+
+/*
+static void argb2rgba(unsigned char* argb, unsigned char* rgba, int width, int height)
+{
+  unsigned char* dst = rgba;
+  for (int y = 0; y < height; y++) {
+    uint32_t *row = (uint32_t *)(argb + (width * 4) * y);
+    for (int x = 0; x < width; x++) {
+      int bx = x * 4;
+      uint32_t *pixel = row + x;
+      uint8_t a = *pixel >> 24;
+      uint8_t r = *pixel >> 16;
+      uint8_t g = *pixel >> 8;
+      uint8_t b = *pixel;
+      dst[bx + 3] = a;
+      dst[bx + 0] = r;
+      dst[bx + 1] = g;
+      dst[bx + 2] = b;
+    }
+    dst += width * 4;
+  }
+}
+*/
+static void argb2rgba(unsigned char* argb, int width, int height)
+{
+  unsigned char* dst = argb;
+  for (int y = 0; y < height; y++) {
+    uint32_t *row = (uint32_t *)(argb + (width * 4) * y);
+    for (int x = 0; x < width; x++) {
+      int bx = x * 4;
+      uint32_t *pixel = row + x;
+      uint8_t a = pixel[3];
+      uint8_t r = pixel[2];
+      uint8_t g = pixel[1];
+      uint8_t b = pixel[0];
+      pixel[0] = r;
+      pixel[1] = g;
+      pixel[2] = b;
+      pixel[3] = a;
+    }
+  }
+}
+
 JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass klass,
-    jobject bitmap,
     jintArray jtouchActions, jintArray jtouchXs, jintArray jtouchYs, jint numTouches)
 {
   // This function is run every frame, thus must be optimized.
@@ -444,10 +480,14 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
 
   // Copy stage canvas to surface
 
-  unsigned char* rgba;
-  AndroidBitmap_lockPixels(env, bitmap, (void**) &rgba);
-  argb2rgba(argb, rgba, width, height);
-  AndroidBitmap_unlockPixels(env, bitmap);
+  if (window != NULL) {
+    ANativeWindow_Buffer buffer;
+    if (ANativeWindow_lock(window, &buffer, NULL) == 0) {
+      argb2rgba(argb, width, height);
+      memcpy(buffer.bits, argb,  width * height * 4);
+      ANativeWindow_unlockAndPost(window);
+    }
+  }
 }
 
 }

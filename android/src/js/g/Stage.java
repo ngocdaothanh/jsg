@@ -2,10 +2,9 @@ package js.g;
 
 import java.util.ArrayList;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -26,12 +25,12 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
 
     private SurfaceHolder surfaceHolder;
     private boolean       running;
-    private Bitmap        bitmap;
 
     private ArrayList<Runnable> queuedEvents = new ArrayList<Runnable>();
 
+    private native static void nativeSetSurface(Surface surface);
+    private native static void nativeUnsetSurface();
     private native static void nativeOnDrawFrame(
-            Bitmap bitmap,
             int[] touchActions, int[] touchXs, int[] touchYs, int numTouches);
 
     //--------------------------------------------------------------------------
@@ -81,7 +80,10 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
         surfaceHolder.addCallback(this);
     }
 
-    public void surfaceChanged(SurfaceHolder holder, int format, final int width, final int height) {
+    public void surfaceChanged(final SurfaceHolder holder, int format, final int width, final int height) {
+        Surface surface = holder.getSurface();
+        nativeSetSurface(surface);
+
         if (!JSG.isReady()) {
             // Display splash
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
@@ -92,10 +94,7 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
             // Start game thread
             new Thread(new Runnable() {
                 public void run() {
-                    JSG.init(mainScript, width, height);
-
-                    // Order of bytes are actually RGBA
-                    bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                    JSG.init(width, height, mainScript);
 
                     // Remove splash
                     JSG.runOnUiThread(new Runnable() {
@@ -117,41 +116,30 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
+        nativeUnsetSurface();
         running = false;
     }
 
     private void gameLoop() {
         while (true) {
             if (running) {
-                Canvas canvas = null;
-                try {
-                    canvas = surfaceHolder.lockCanvas();
-                    if (canvas != null) {
-                        synchronized (queuedEvents) {
-                            for (Runnable runnable : queuedEvents) {
-                                runnable.run();
-                            }
-                            queuedEvents.clear();
-                        }
-
-                        synchronized (touchLock) {
-                            for (int i = 0; i < numTouches; i++) {
-                                touchActions2[i] = touchActions[i];
-                                touchXs2     [i] = touchXs     [i];
-                                touchYs2     [i] = touchYs     [i];
-                            }
-                            numTouches2 = numTouches;
-                            numTouches = 0;
-                        }
-                        nativeOnDrawFrame(bitmap, touchActions2, touchXs2, touchYs2, numTouches2);
-                        canvas.drawBitmap(bitmap, 0, 0, null);
+                synchronized (queuedEvents) {
+                    for (Runnable runnable : queuedEvents) {
+                        runnable.run();
                     }
-                } finally {
-                    // Do this in a finally so that if an exception is thrown
-                    // during the above, we don't leave the Surface in an
-                    // inconsistent state
-                    if (canvas != null) surfaceHolder.unlockCanvasAndPost(canvas);
+                    queuedEvents.clear();
                 }
+
+                synchronized (touchLock) {
+                    for (int i = 0; i < numTouches; i++) {
+                        touchActions2[i] = touchActions[i];
+                        touchXs2     [i] = touchXs     [i];
+                        touchYs2     [i] = touchYs     [i];
+                    }
+                    numTouches2 = numTouches;
+                    numTouches = 0;
+                }
+                nativeOnDrawFrame(touchActions2, touchXs2, touchYs2, numTouches2);
             } else {
                 try { Thread.sleep(500); } catch (Exception e) {}
             }

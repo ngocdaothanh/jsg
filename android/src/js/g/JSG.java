@@ -24,7 +24,7 @@ public class JSG {
     public static boolean isReady() { return ready.get(); }
 
     /** Must be run on the game thread */
-    public static void init(final String mainScript, final int stageWidth, final int stageHeight) {
+    public static void init(int stageWidth, int stageHeight, String mainScript) {
         nativeInit(stageWidth, stageHeight, mainScript);
         ready.set(true);
     }
