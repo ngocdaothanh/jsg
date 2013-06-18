@@ -143,3 +143,10 @@ Build Java lib
 After building the NDK lib, build the Java part as normal:
 * See project.properties to know dependency projects
 * Also see doc directory to know dependency .jar files
+
+Build JS
+========
+
+::
+
+  coffee --compile --bare --watch --output js_build/ js/
