@@ -5,9 +5,8 @@ JSG documentation
    :maxdepth: 3
 
    overview
-   directory_structure
-   native
    android
+   native
    netstate
    facebook
    twitter
