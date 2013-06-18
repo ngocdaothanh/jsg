@@ -4,12 +4,15 @@ Android
 Create main activity
 --------------------
 
-1. Extends JSGActivity
+1. Extend JSGActivity
 2. Create splash, you may use js.g.Splash or your own
 3. Create stage and set the splash to it
 4. Add the stage to the activity
 
 ::
+
+  import android.os.Bundle;
+  import android.view.View;
 
   import js.g.JSGActivity;
   import js.g.Splash;

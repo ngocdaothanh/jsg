@@ -71,7 +71,7 @@ public class JSGActivity extends Activity {
     //--------------------------------------------------------------------------
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         instance = this;
 
@@ -109,7 +109,7 @@ public class JSGActivity extends Activity {
     }
 
     @Override
-    public void onDestroy() {
+    protected void onDestroy() {
         synchronized (onDestroyListeners) {
             for (Runnable runnable: onDestroyListeners) {
                 runnable.run();
