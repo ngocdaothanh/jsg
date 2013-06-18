@@ -36,23 +36,23 @@ public class Stage extends SurfaceView implements SurfaceHolder.Callback {
 
     //--------------------------------------------------------------------------
 
-    static int TOUCH_DOWN = 0;
-    static int TOUCH_MOVE = 1;
-    static int TOUCH_UP   = 2;
-    static int TOUCH_TAP  = 3;
+    private static final int TOUCH_DOWN = 0;
+    private static final int TOUCH_MOVE = 1;
+    private static final int TOUCH_UP   = 2;
+    private static final int TOUCH_TAP  = 3;
 
-    static int MAX_TOUCHES = 20;
+    private static final int MAX_TOUCHES = 20;
 
-    int numTouches  = 0;
-    int numTouches2 = 0;
+    private int numTouches  = 0;
+    private int numTouches2 = 0;
 
-    int[] touchActions = new int[MAX_TOUCHES];
-    int[] touchXs      = new int[MAX_TOUCHES];
-    int[] touchYs      = new int[MAX_TOUCHES];
+    private int[] touchActions = new int[MAX_TOUCHES];
+    private int[] touchXs      = new int[MAX_TOUCHES];
+    private int[] touchYs      = new int[MAX_TOUCHES];
 
-    int[] touchActions2 = new int[MAX_TOUCHES];
-    int[] touchXs2      = new int[MAX_TOUCHES];
-    int[] touchYs2      = new int[MAX_TOUCHES];
+    private int[] touchActions2 = new int[MAX_TOUCHES];
+    private int[] touchXs2      = new int[MAX_TOUCHES];
+    private int[] touchYs2      = new int[MAX_TOUCHES];
 
     private GestureDetector gd;
     private Object          touchLock = new Object();
