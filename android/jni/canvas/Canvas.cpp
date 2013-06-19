@@ -20,6 +20,8 @@
 #include "CanvasGradient.h"
 #include "CanvasPattern.h"
 
+#include "../jsg/jsg.h"
+
 //------------------------------------------------------------------------------
 
 void
@@ -176,11 +178,9 @@ Canvas::ToBuffer(const Arguments &args) {
  */
 
 Canvas::Canvas(int w, int h) {
-  width = w;
-  height = h;
-  _surface = NULL;
-
-  _surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
+  width    = w;
+  height   = h;
+  _surface = JSG::createCairoSurface(w, h);
   assert(_surface);
   V8::AdjustAmountOfExternalAllocatedMemory(4 * w * h);
 }

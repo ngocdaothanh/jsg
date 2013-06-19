@@ -1,17 +1,37 @@
 #ifndef _JSG_H_
 #define _JSG_H_
 
+#include <android_native_app_glue.h>
 #include <jni.h>
 #include <v8.h>
+#include <cairo-gl.h>
 
 #include "log.h"
 
 class JSG
 {
  public:
-  static JNIEnv* env;
+  static android_app* app;
+  static JNIEnv*      env;
+  static bool         animating;
+
+  static cairo_device_t*  eglDevice;
+  static cairo_surface_t* windowSurface;
+
 
  public:
+  static inline cairo_surface_t* createCairoSurface(int width, int height)
+  {
+    cairo_surface_t* ret = cairo_gl_surface_create(eglDevice, CAIRO_CONTENT_COLOR_ALPHA, width, height);
+    //cairo_surface_t* ret = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+
+    int w = cairo_gl_surface_get_width(ret);
+    int h = cairo_gl_surface_get_height(ret);
+    LOGI("createCairoSurface: %d x %d", w, h);
+
+    return ret;
+  }
+
   static inline JNIEnv* getJNIEnv()
   {
     return env;

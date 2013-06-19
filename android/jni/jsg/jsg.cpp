@@ -5,7 +5,9 @@
 #include "prefs.h"
 
 #include <android/native_window.h>
-#include <android/native_window_jni.h>
+
+#include <EGL/egl.h>
+#include <GLES/gl.h>
 
 #include <canvas/FontFace.h>
 #include <canvas/Canvas.h>
@@ -37,9 +39,12 @@ static Persistent<Function> jsgOnFrameFun;
 // http://java.sun.com/developer/onlineTraining/Programming/JDCBook/jniref.html#memory
 // http://android-developers.blogspot.jp/2011/11/jni-local-reference-changes-in-ics.html
 
-JNIEnv* JSG::env;
+android_app* JSG::app;
+bool         JSG::animating;
+JNIEnv*      JSG::env;
 
-ANativeWindow* window;
+cairo_device_t*  JSG::eglDevice;
+cairo_surface_t* JSG::windowSurface;
 
 //------------------------------------------------------------------------------
 
@@ -132,42 +137,22 @@ static void jsDestroy()
 
 //------------------------------------------------------------------------------
 
-static void loadAssetFromAssetsDirectory(JNIEnv* env, const char* fileName, unsigned char** bytes, int* len)
+static void loadAssetFromAssetsDirectory(const char* fileName, unsigned char** bytes, int* len)
 {
-  static jclass    klass = NULL;
-  static jmethodID mid   = NULL;
-  if (!klass) {
-    klass = JSG::findClassAndMakeGlobal("js/g/JSG");
-    mid   = env->GetStaticMethodID(klass, "loadAsset", "(Ljava/lang/String;)[B");
-  }
+  AAssetManager* mgr = JSG::app->activity->assetManager;
 
-  // Will not be released because it's just a wrapper
-  // Releasing will cause crash
-  jstring jFileName = env->NewStringUTF(fileName);
-
-  jbyteArray jba = (jbyteArray) env->CallStaticObjectMethod(klass, mid, jFileName);
-  if (jba == NULL) {
+  AAsset* asset = AAssetManager_open(mgr, fileName, AASSET_MODE_UNKNOWN);
+  if (NULL == asset) {
     LOGE("Could not load asset: %s", fileName);
     *bytes = NULL;
     *len   = 0;
     return;
   }
 
-  jbyte* cba = env->GetByteArrayElements(jba, NULL);
-  if (cba == NULL) {
-    LOGE("Could not load asset: %s", fileName);
-    *bytes = NULL;
-    *len   = 0;
-    return;
-  }
-
-  *len   = env->GetArrayLength(jba);
+  *len   = AAsset_getLength(asset);
   *bytes = (unsigned char*) malloc(*len);
-  memcpy(*bytes, cba, *len);
-  env->ReleaseByteArrayElements(jba, cba, 0);
-
-  env->DeleteLocalRef(jFileName);
-  env->DeleteLocalRef(jba);
+  AAsset_read(asset, *bytes, *len);
+  AAsset_close(asset);
 }
 
 #ifdef JSG_PROD
@@ -177,7 +162,7 @@ static void loadAssetFromAssetsDirectory(JNIEnv* env, const char* fileName, unsi
 void JSG::loadAsset(const char* fileName, unsigned char** bytes, int* len)
 {
 #ifndef JSG_PROD
-  loadAssetFromAssetsDirectory(env, fileName, bytes, len);
+  loadAssetFromAssetsDirectory(fileName, bytes, len);
 #else
   if (beginsWith(fileName, "scripts/")) {
     jsg_assets_2c_load(fileName, bytes, len);
@@ -340,31 +325,6 @@ Handle<Value> JSG::SaveCanvasToSystemGallery(const Arguments& args)
 
 extern "C" {
 
-// Run on the main thread
-jint JNI_OnLoad(JavaVM* vm, void* reserved)
-{
-  vm->GetEnv((void**) &JSG::env, JNI_VERSION_1_4);
-  return JNI_VERSION_1_4;
-}
-
-// Run on the game thread
-JNIEXPORT void JNICALL Java_js_g_JSG_nativeInit(JNIEnv* env, jclass klass, jint stageWidth, jint stageHeight, jstring mainScript)
-{
-  JSG::env = env;
-
-  jsInitializeNative();
-  jsLoadDefaults();
-
-  const char *cmainScript = env->GetStringUTFChars(mainScript, NULL);
-  char js[1024];
-  sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", cmainScript, stageWidth, stageHeight);
-  node::Run(js);
-  env->ReleaseStringUTFChars(mainScript, cmainScript);
-
-  // Must be after jsg.fireReady because jsg.canvas is created at jsg.fireReady
-  jsCacheCanvasAndOnFrame();
-}
-
 JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js)
 {
   const char *cjs = env->GetStringUTFChars(js, NULL);
@@ -374,16 +334,82 @@ JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js
   env->ReleaseStringUTFChars(js, cjs);
 }
 
-JNIEXPORT void JNICALL Java_js_g_Stage_nativeSetSurface(JNIEnv* env, jclass klass, jobject surface)
-{
-  window = ANativeWindow_fromSurface(env, surface);
-  ANativeWindow_setBuffersGeometry(window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+static void drawFrame();
+static void* gameLoop(void* dummy) {
+  while (JSG::animating) {
+    if (JSG::app->window != NULL) {
+      // Drawing is throttled to the screen update rate, so there
+      // is no need to do timing here.
+      drawFrame();
+    }
+  }
+
+  return NULL;
 }
 
-JNIEXPORT void JNICALL Java_js_g_Stage_nativeUnsetSurface(JNIEnv* env, jclass klass)
+// Run on the game thread
+static void init(const char* mainScript)
 {
-  ANativeWindow_release(window);
-  window = NULL;
+  jsInitializeNative();
+  jsLoadDefaults();
+
+  ANativeWindow* window = JSG::app->window;
+  //ANativeWindow_setBuffersGeometry(window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+  int stageWidth  = ANativeWindow_getWidth(window);
+  int stageHeight = ANativeWindow_getHeight(window);
+
+  //---
+
+  const EGLint attribs[] = {
+    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
+    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+    EGL_BLUE_SIZE,       8,
+    EGL_GREEN_SIZE,      8,
+    EGL_RED_SIZE,        8,
+    EGL_ALPHA_SIZE,      8,
+    EGL_NONE
+  };
+
+  const EGLint contextAttribs[] = {
+    EGL_CONTEXT_CLIENT_VERSION, 2,
+    EGL_NONE
+  };
+
+  EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  eglInitialize(display, 0, 0);
+
+  EGLConfig config;
+  EGLint numConfigs;
+  eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+
+  EGLint format;
+  eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
+  ANativeWindow_setBuffersGeometry(window, 0, 0, format);
+
+  EGLSurface surface = eglCreateWindowSurface(display, config, window, NULL);
+  EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs);
+
+  if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+    LOGI("Unable to eglMakeCurrent");
+    exit(-1);
+  }
+
+  glViewport(0, 0, stageWidth, stageHeight);
+
+  JSG::eglDevice     = cairo_egl_device_create(display, context);
+  JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::eglDevice, surface, stageWidth, stageHeight);
+
+  //---
+
+  char js[1024];
+  sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, stageWidth, stageHeight);
+  node::Run(js);
+
+  // Must be after jsg.fireReady because jsg.canvas is created at jsg.fireReady
+  jsCacheCanvasAndOnFrame();
+
+  pthread_t t;
+  pthread_create(&t, NULL, &gameLoop, NULL);
 }
 
 /*
@@ -410,24 +436,22 @@ static void argb2rgba(unsigned char* argb, unsigned char* rgba, int width, int h
 */
 static void argb2rgba(unsigned char* argb, int width, int height)
 {
-  unsigned char* dst = argb;
-  for (int y = 0; y < height; y++) {
-    uint32_t *row = (uint32_t *)(argb + (width * 4) * y);
-    for (int x = 0; x < width; x++) {
-      int bx = x * 4;
-      uint32_t *pixel = row + x;
-      uint8_t a = pixel[3];
-      uint8_t r = pixel[2];
-      uint8_t g = pixel[1];
-      uint8_t b = pixel[0];
-      pixel[0] = r;
-      pixel[1] = g;
-      pixel[2] = b;
-      pixel[3] = a;
-    }
+  for (int i = 0; i < width * height * 4; i++) {
+    uint8_t a = argb[i + 3];
+    uint8_t r = argb[i + 2];
+    uint8_t g = argb[i + 1];
+    uint8_t b = argb[i];
+
+    argb[i    ] = r;
+    argb[i + 1] = g;
+    argb[i + 2] = b;
+    argb[i + 3] = a;
+
+    i += 4;
   }
 }
 
+/*
 JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass klass,
     jintArray jtouchActions, jintArray jtouchXs, jintArray jtouchYs, jint numTouches)
 {
@@ -483,9 +507,110 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
   if (window != NULL) {
     ANativeWindow_Buffer buffer;
     if (ANativeWindow_lock(window, &buffer, NULL) == 0) {
-      argb2rgba(argb, width, height);
+      //argb2rgba(argb, width, height);
       memcpy(buffer.bits, argb,  width * height * 4);
       ANativeWindow_unlockAndPost(window);
+    }
+  }
+}
+*/
+
+static void drawFrame()
+{
+  jsgOnFrameFun->Call(jsgObject, 0, NULL);
+
+  Canvas* canvas = ObjectWrap::Unwrap<Canvas>(jsgCanvasObject);
+  cairo_surface_t* surface = canvas->surface();
+
+  cairo_t* windowCr = cairo_create(JSG::windowSurface);
+  cairo_set_source_surface(windowCr, surface, 0, 0);
+  cairo_paint(windowCr);
+  cairo_destroy(windowCr);
+
+  cairo_gl_surface_swapbuffers(JSG::windowSurface);
+}
+
+/**
+ * Process the next main command.
+ */
+static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
+  switch (cmd) {
+    case APP_CMD_SAVE_STATE:
+      // The system has asked us to save our current state.  Do so.
+      break;
+
+    case APP_CMD_INIT_WINDOW:
+      // The window is being shown, get it ready.
+      if (app->window != NULL) {
+        init("scripts/js/main.coffee");
+      }
+      break;
+
+    case APP_CMD_TERM_WINDOW:
+      // The window is being hidden or closed, clean it up.
+      //engine_term_display(engine);
+      break;
+
+    case APP_CMD_GAINED_FOCUS:
+      break;
+
+    case APP_CMD_LOST_FOCUS:
+      break;
+  }
+}
+
+/**
+ * Process the next input event.
+ */
+static int32_t engine_handle_input(android_app* app, AInputEvent* event) {
+  return 0;
+}
+
+/**
+ * This is the main entry point of a native application that is using
+ * android_native_app_glue.  It runs in its own thread, with its own
+ * event loop for receiving input events and doing other things.
+ */
+void android_main(android_app* app) {
+  JSG::app = app;
+  app->activity->vm->AttachCurrentThread(&JSG::env, NULL);
+
+  // Make sure glue isn't stripped.
+  app_dummy();
+
+  app->onAppCmd = engine_handle_cmd;
+  app->onInputEvent = engine_handle_input;
+
+  if (app->savedState != NULL) {
+    // We are starting with a previous saved state; restore from it.
+  }
+
+  JSG::animating = true;
+  while (1) {
+    // Read all pending events.
+    int ident;
+    int events;
+    struct android_poll_source* source;
+
+    // If not animating, we will block forever waiting for events.
+    // If animating, we loop until all events are read, then continue
+    // to draw the next frame of animation.
+    //while ((ident=ALooper_pollAll(JSG::animating ? 0 : -1, NULL, &events, (void**)&source)) >= 0) {
+    while ((ident=ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0) {
+      // Process this event.
+      if (source != NULL) {
+        source->process(app, source);
+      }
+
+      // If a sensor has data, process it now.
+      if (ident == LOOPER_ID_USER) {
+      }
+
+      // Check if we are exiting.
+      if (app->destroyRequested != 0) {
+        JSG::animating = false;
+        return;
+      }
     }
   }
 }
