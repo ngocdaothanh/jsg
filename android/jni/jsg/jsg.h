@@ -15,14 +15,18 @@ class JSG
   static JNIEnv*      env;
   static bool         animating;
 
-  static cairo_device_t*  eglDevice;
+  static EGLDisplay eglDisplay;
+  static EGLContext eglContext;
+  static EGLSurface eglSurface;
+
+  static cairo_device_t*  cairoDevice;
   static cairo_surface_t* windowSurface;
 
 
  public:
   static inline cairo_surface_t* createCairoSurface(int width, int height)
   {
-    cairo_surface_t* ret = cairo_gl_surface_create(eglDevice, CAIRO_CONTENT_COLOR_ALPHA, width, height);
+    cairo_surface_t* ret = cairo_gl_surface_create(cairoDevice, CAIRO_CONTENT_COLOR_ALPHA, width, height);
     //cairo_surface_t* ret = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
 
     int w = cairo_gl_surface_get_width(ret);

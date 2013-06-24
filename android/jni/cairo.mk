@@ -54,6 +54,7 @@ LIBCAIRO_SRC = \
          cairogles/src/cairo-gl-surface.c  \
          cairogles/src/cairo-gl-device.c  \
          cairogles/src/cairo-gl-glyphs.c  \
+         cairogles/src/cairo-gl-hairline-stroke.c  \
          cairogles/src/cairo-gl-msaa-compositor.c  \
          cairogles/src/cairo-gl-source.c  \
          cairogles/src/cairo-gl-traps-compositor.c  \
@@ -145,6 +146,7 @@ LIBCAIRO_CFLAGS:=                                                   \
     -DCAIRO_HAS_FT_FONT=1                                           \
     -DCAIRO_HAS_GLESV2_SURFACE=1                                    \
     -DCAIRO_HAS_EGL_FUNCTIONS=1                                     \
+    -DCAIRO_GL_COMPOSITOR=msaa                                      \
     -Ijni/libpng -Ijni/cairo -Ijni/cairogles/src -Ijni/cairo-extra -Ijni/freetype2/include \
     -include "cairo-version.h" \
     -Wno-missing-field-initializers -Wno-attributes

@@ -43,7 +43,11 @@ android_app* JSG::app;
 bool         JSG::animating;
 JNIEnv*      JSG::env;
 
-cairo_device_t*  JSG::eglDevice;
+EGLDisplay JSG::eglDisplay;
+EGLContext JSG::eglContext;
+EGLSurface JSG::eglSurface;
+
+cairo_device_t*  JSG::cairoDevice;
 cairo_surface_t* JSG::windowSurface;
 
 //------------------------------------------------------------------------------
@@ -338,6 +342,11 @@ static void drawFrame();
 static void* gameLoop(void* dummy) {
   while (JSG::animating) {
     if (JSG::app->window != NULL) {
+      if (eglMakeCurrent(JSG::eglDisplay, JSG::eglSurface, JSG::eglSurface, JSG::eglContext) == EGL_FALSE) {
+        LOGI("Unable to eglMakeCurrent");
+        exit(-1);
+      }
+
       // Drawing is throttled to the screen update rate, so there
       // is no need to do timing here.
       drawFrame();
@@ -354,7 +363,7 @@ static void init(const char* mainScript)
   jsLoadDefaults();
 
   ANativeWindow* window = JSG::app->window;
-  //ANativeWindow_setBuffersGeometry(window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+  ANativeWindow_setBuffersGeometry(window, 0, 0, WINDOW_FORMAT_RGBA_8888);
   int stageWidth  = ANativeWindow_getWidth(window);
   int stageHeight = ANativeWindow_getHeight(window);
 
@@ -367,6 +376,8 @@ static void init(const char* mainScript)
     EGL_GREEN_SIZE,      8,
     EGL_RED_SIZE,        8,
     EGL_ALPHA_SIZE,      8,
+    EGL_SAMPLES,         8,
+    EGL_SAMPLE_BUFFERS,  1,
     EGL_NONE
   };
 
@@ -375,34 +386,37 @@ static void init(const char* mainScript)
     EGL_NONE
   };
 
-  EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  eglInitialize(display, 0, 0);
+  JSG::eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  eglInitialize(JSG::eglDisplay, 0, 0);
 
   EGLConfig config;
   EGLint numConfigs;
-  eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+  eglChooseConfig(JSG::eglDisplay, attribs, &config, 1, &numConfigs);
 
   EGLint format;
-  eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
+  eglGetConfigAttrib(JSG::eglDisplay, config, EGL_NATIVE_VISUAL_ID, &format);
   ANativeWindow_setBuffersGeometry(window, 0, 0, format);
 
-  EGLSurface surface = eglCreateWindowSurface(display, config, window, NULL);
-  EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs);
+  JSG::eglSurface = eglCreateWindowSurface(JSG::eglDisplay, config, window, NULL);
+  JSG::eglContext = eglCreateContext(JSG::eglDisplay, config, EGL_NO_CONTEXT, contextAttribs);
 
-  if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+  if (eglMakeCurrent(JSG::eglDisplay, JSG::eglSurface, JSG::eglSurface, JSG::eglContext) == EGL_FALSE) {
     LOGI("Unable to eglMakeCurrent");
     exit(-1);
   }
 
   glViewport(0, 0, stageWidth, stageHeight);
 
-  JSG::eglDevice     = cairo_egl_device_create(display, context);
-  JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::eglDevice, surface, stageWidth, stageHeight);
+  JSG::cairoDevice     = cairo_egl_device_create(JSG::eglDisplay, JSG::eglContext);
+  //JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::cairoDevice, JSG::eglSurface, stageWidth, stageHeight);
+  JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::cairoDevice, JSG::eglSurface, 512, 512);
+  cairo_gl_device_set_thread_aware(JSG::cairoDevice, false);
 
   //---
 
   char js[1024];
-  sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, stageWidth, stageHeight);
+  //sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, stageWidth, stageHeight);
+  sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, 512, 512);
   node::Run(js);
 
   // Must be after jsg.fireReady because jsg.canvas is created at jsg.fireReady
