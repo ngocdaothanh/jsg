@@ -338,43 +338,44 @@ JNIEXPORT void JNICALL Java_js_g_JSG_runJS(JNIEnv* env, jclass klass, jstring js
   env->ReleaseStringUTFChars(js, cjs);
 }
 
-static void drawFrame();
-static void* gameLoop(void* dummy) {
-  while (JSG::animating) {
-    if (JSG::app->window != NULL) {
-      if (eglMakeCurrent(JSG::eglDisplay, JSG::eglSurface, JSG::eglSurface, JSG::eglContext) == EGL_FALSE) {
-        LOGI("Unable to eglMakeCurrent");
-        exit(-1);
-      }
+static void drawFrame()
+{
+  jsgOnFrameFun->Call(jsgObject, 0, NULL);
 
-      // Drawing is throttled to the screen update rate, so there
-      // is no need to do timing here.
-      drawFrame();
-    }
-  }
+  Canvas* canvas = ObjectWrap::Unwrap<Canvas>(jsgCanvasObject);
+  cairo_surface_t* surface = canvas->surface();
 
-  return NULL;
+  cairo_t* windowCr = cairo_create(JSG::windowSurface);
+  cairo_set_source_surface(windowCr, surface, 0, 0);
+  cairo_paint(windowCr);
+  cairo_destroy(windowCr);
+
+  cairo_gl_surface_swapbuffers(JSG::windowSurface);
 }
 
 // Run on the game thread
-static void init(const char* mainScript)
-{
+static void* gameLoop(void* arg) {
+  char* mainScript = (char*) arg;
+  LOGI("mainScript: %s", mainScript);
+
   jsInitializeNative();
   jsLoadDefaults();
 
   ANativeWindow* window = JSG::app->window;
   ANativeWindow_setBuffersGeometry(window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+
   int stageWidth  = ANativeWindow_getWidth(window);
   int stageHeight = ANativeWindow_getHeight(window);
+  LOGI("stage: %d x %d", stageWidth, stageHeight);
 
   //---
 
   const EGLint attribs[] = {
     EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
     EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-    EGL_BLUE_SIZE,       8,
-    EGL_GREEN_SIZE,      8,
     EGL_RED_SIZE,        8,
+    EGL_GREEN_SIZE,      8,
+    EGL_BLUE_SIZE,       8,
     EGL_ALPHA_SIZE,      8,
     EGL_SAMPLES,         8,
     EGL_SAMPLE_BUFFERS,  1,
@@ -383,6 +384,11 @@ static void init(const char* mainScript)
 
   const EGLint contextAttribs[] = {
     EGL_CONTEXT_CLIENT_VERSION, 2,
+    EGL_NONE
+  };
+
+  const EGLint surfaceAttribs[] = {
+    EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
     EGL_NONE
   };
 
@@ -397,72 +403,38 @@ static void init(const char* mainScript)
   eglGetConfigAttrib(JSG::eglDisplay, config, EGL_NATIVE_VISUAL_ID, &format);
   ANativeWindow_setBuffersGeometry(window, 0, 0, format);
 
-  JSG::eglSurface = eglCreateWindowSurface(JSG::eglDisplay, config, window, NULL);
   JSG::eglContext = eglCreateContext(JSG::eglDisplay, config, EGL_NO_CONTEXT, contextAttribs);
+  JSG::eglSurface = eglCreateWindowSurface(JSG::eglDisplay, config, window, surfaceAttribs);
 
   if (eglMakeCurrent(JSG::eglDisplay, JSG::eglSurface, JSG::eglSurface, JSG::eglContext) == EGL_FALSE) {
     LOGI("Unable to eglMakeCurrent");
     exit(-1);
   }
 
-  glViewport(0, 0, stageWidth, stageHeight);
-
-  JSG::cairoDevice     = cairo_egl_device_create(JSG::eglDisplay, JSG::eglContext);
-  //JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::cairoDevice, JSG::eglSurface, stageWidth, stageHeight);
-  JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::cairoDevice, JSG::eglSurface, 512, 512);
+  JSG::cairoDevice   = cairo_egl_device_create(JSG::eglDisplay, JSG::eglContext);
+  JSG::windowSurface = cairo_gl_surface_create_for_egl(JSG::cairoDevice, JSG::eglSurface, stageWidth, stageHeight);
   cairo_gl_device_set_thread_aware(JSG::cairoDevice, false);
 
   //---
 
+  glViewport(0, 0, stageWidth, stageHeight);
+
   char js[1024];
-  //sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, stageWidth, stageHeight);
-  sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, 512, 512);
+  sprintf(js, "jsg.load('%s');  jsg.fireReady(%d, %d)", mainScript, stageWidth, stageHeight);
   node::Run(js);
 
   // Must be after jsg.fireReady because jsg.canvas is created at jsg.fireReady
   jsCacheCanvasAndOnFrame();
 
-  pthread_t t;
-  pthread_create(&t, NULL, &gameLoop, NULL);
-}
+  while (1) {
+    if (JSG::app->window != NULL && JSG::animating) {
+      drawFrame();
 
-/*
-static void argb2rgba(unsigned char* argb, unsigned char* rgba, int width, int height)
-{
-  unsigned char* dst = rgba;
-  for (int y = 0; y < height; y++) {
-    uint32_t *row = (uint32_t *)(argb + (width * 4) * y);
-    for (int x = 0; x < width; x++) {
-      int bx = x * 4;
-      uint32_t *pixel = row + x;
-      uint8_t a = *pixel >> 24;
-      uint8_t r = *pixel >> 16;
-      uint8_t g = *pixel >> 8;
-      uint8_t b = *pixel;
-      dst[bx + 3] = a;
-      dst[bx + 0] = r;
-      dst[bx + 1] = g;
-      dst[bx + 2] = b;
+      // TODO: throttle FPS to reduce CPU consumption
     }
-    dst += width * 4;
   }
-}
-*/
-static void argb2rgba(unsigned char* argb, int width, int height)
-{
-  for (int i = 0; i < width * height * 4; i++) {
-    uint8_t a = argb[i + 3];
-    uint8_t r = argb[i + 2];
-    uint8_t g = argb[i + 1];
-    uint8_t b = argb[i];
 
-    argb[i    ] = r;
-    argb[i + 1] = g;
-    argb[i + 2] = b;
-    argb[i + 3] = a;
-
-    i += 4;
-  }
+  return NULL;
 }
 
 /*
@@ -529,21 +501,6 @@ JNIEXPORT void JNICALL Java_js_g_Stage_nativeOnDrawFrame(JNIEnv* env, jclass kla
 }
 */
 
-static void drawFrame()
-{
-  jsgOnFrameFun->Call(jsgObject, 0, NULL);
-
-  Canvas* canvas = ObjectWrap::Unwrap<Canvas>(jsgCanvasObject);
-  cairo_surface_t* surface = canvas->surface();
-
-  cairo_t* windowCr = cairo_create(JSG::windowSurface);
-  cairo_set_source_surface(windowCr, surface, 0, 0);
-  cairo_paint(windowCr);
-  cairo_destroy(windowCr);
-
-  cairo_gl_surface_swapbuffers(JSG::windowSurface);
-}
-
 /**
  * Process the next main command.
  */
@@ -556,7 +513,9 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
     case APP_CMD_INIT_WINDOW:
       // The window is being shown, get it ready.
       if (app->window != NULL) {
-        init("scripts/js/main.coffee");
+        pthread_t t;
+        pthread_create(&t, NULL, &gameLoop, (void*) "scripts/js/main.coffee");
+        //gameLoop((void*) "scripts/js/main.coffee");
       }
       break;
 
