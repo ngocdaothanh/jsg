@@ -29,6 +29,7 @@ class JSG
     cairo_surface_t* ret = cairo_gl_surface_create(cairoDevice, CAIRO_CONTENT_COLOR_ALPHA, width, height);
     //cairo_surface_t* ret = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
 
+
     int w = cairo_gl_surface_get_width(ret);
     int h = cairo_gl_surface_get_height(ret);
     LOGI("createCairoSurface: %d x %d", w, h);
@@ -69,7 +70,7 @@ class JSG
 
     char msg[100];
     sprintf(msg, "Could not find Java class \"%s\"", className);
-    LOGE(msg);
+    LOGE("%s", msg);
     jclass exceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(exceptionClass, msg);
     env->DeleteLocalRef(exceptionClass);
