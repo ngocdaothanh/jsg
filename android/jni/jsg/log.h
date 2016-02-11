@@ -5,8 +5,8 @@
 #include <node_object_wrap.h>
 
 #define JSG_LOG_TAG "JSG"
-#define LOGI(...)   __android_log_print(ANDROID_LOG_INFO,  JSG_LOG_TAG, __VA_ARGS__)
-#define LOGE(...)   __android_log_print(ANDROID_LOG_ERROR, JSG_LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  JSG_LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, JSG_LOG_TAG, __VA_ARGS__)
 
 class Console: public node::ObjectWrap
 {
